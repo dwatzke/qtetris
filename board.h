@@ -21,6 +21,7 @@ private:
 	QTimer *m_timer;
 	bool m_brickFalling;
 	BrickInfo *m_brickInfo;
+	QPoint m_brickPos;
 	QPoint m_lastMove;
 
 	void initialize();
@@ -31,7 +32,7 @@ private:
 signals:
 
 private slots:
-	void gameStep();
+	void timerMoveDown();
 
 public slots:
 

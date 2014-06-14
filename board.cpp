@@ -14,6 +14,7 @@ Board::Board(QWidget *parent) :
 	m_timer(new QTimer(this)),
 	m_brickFalling(false),
 	m_brickInfo(0),
+	m_brickPos(Board::COLUMNS / 2, -1),
 	m_lastMove(0, 0)
 {
 	this->initialize();
@@ -36,18 +37,20 @@ void Board::initialize()
 		}
 	}
 
-	connect(m_timer, SIGNAL(timeout()), this, SLOT(gameStep()));
+	/* TODO: connect moveLeft, moveRight, forceMoveDown and fallDown */
+	connect(m_timer, SIGNAL(timeout()), this, SLOT(timerMoveDown()));
 	m_timer->start(1000);
 }
 
-/** Carries out the next game step.
+/** Carries out the automatic move down.
  * Either drops a new brick or it moves down the currently falling one.
  */
-void Board::gameStep()
+void Board::timerMoveDown()
 {
 	if (!m_brickFalling) {
 		this->dropBrick();
 	} else {
+		m_lastMove = QPoint(0, 1);
 		this->moveBrick();
 	}
 }
@@ -78,10 +81,8 @@ void Board::moveBrick()
 	Q_ASSERT(m_brickFalling == true);
 
 	/* TODO: undraw previous brick state if any */
-	if (!m_lastMove.isNull()) {
+	if (m_brickPos.y() != -1) {
 		//
 	}
 	/* TODO: draw new brick state */
-
-	/* TODO: prepare next step */
 }
