@@ -17,6 +17,9 @@ private:
 	Board* m_board;
 
 	void initialize();
+
+public slots:
+	void resetBoard();
 };
 
 #endif // MAINWINDOW_H

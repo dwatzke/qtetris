@@ -5,6 +5,7 @@
 #include <QDebug>
 #include <QGridLayout>
 #include <QLayoutItem>
+#include <QMessageBox>
 #include <QShortcut>
 #include <QTimer>
 
@@ -92,12 +93,29 @@ void Board::moveBrick(BrickMoveDirection move)
 	/* undraw previous brick state if any */
 	this->drawBrick(false);
 
-	BrickMoveType moveType = this->checkBrickMove(move);
+	/* determine if move causes collision and proceed with it if not */
+	BrickMoveType moveType = this->checkAndMakeBrickMove(move);
+
+	/* check for gameover */
+	if (moveType == GameOver) {
+		disconnect(m_timer, SIGNAL(timeout()), this, SLOT(timerMoveDown()));
+		int ret = QMessageBox::critical(this,
+			tr("Game over"), tr("Game over - bricks collided!"),
+			QMessageBox::Retry, QMessageBox::Close);
+		switch(ret) {
+		case QMessageBox::Retry:
+			emit gameReset();
+			break;
+		default:
+			/* noop */
+			break;
+		}
+	}
 
 	/* draw new brick state */
 	this->drawBrick();
 
-	/* brick hit bottom of board */
+	/* if there was collision, send another brick */
 	if (moveType == Collision) {
 		qDebug() << "a collision occured";
 		m_brickFalling = false;
@@ -105,9 +123,9 @@ void Board::moveBrick(BrickMoveDirection move)
 }
 
 /** Check if changing brick position using 'change' parameter results in
-  * valid or invalid move.
+  * valid or invalid move. If it's valid, change the position.
   */
-BrickMoveType Board::checkBrickMove(BrickMoveDirection move)
+BrickMoveType Board::checkAndMakeBrickMove(BrickMoveDirection move)
 {
 	/* prepare position change based on direction of movement */
 	QPoint change;
@@ -128,9 +146,11 @@ BrickMoveType Board::checkBrickMove(BrickMoveDirection move)
 
 	QPoint test = m_brickPos + change;
 
+	/* horizontal board bounds */
 	if (test.x() < 0 || test.x() > (Board::COLUMNS - m_brickInfo->width()))
 		return Noop;
 
+	/* vertical end of board */
 	if ((test.y() + m_brickInfo->height()) > Board::ROWS)
 		return Collision;
 
@@ -145,11 +165,20 @@ BrickMoveType Board::checkBrickMove(BrickMoveDirection move)
 
 		Square *sq = qobject_cast<Square*>(m_layout->itemAtPosition(row, col)->widget());
 		qDebug() << "occupy test for" << "row =" << row << ", col =" << col;
+
+		/* if square is occupied */
 		if (sq->isOccupied()) {
-			if (change == QPoint(-1, 0) || change == QPoint(1, 0))
+			/* if we wanted to move left or right */
+			if (move == Left || move == Right) {
+				/* do nothing */
 				return Noop;
-			else
-				return Collision;
+			} else {
+				/* if collision occurs on the first row, it's gameover */
+				if (row != 0)
+					return Collision;
+				else
+					return GameOver;
+			}
 		}
 	}
 
@@ -170,7 +199,6 @@ void Board::drawBrick(bool draw)
 		int col = p.x() + m_brickPos.x();
 		int row = p.y() + m_brickPos.y();
 
-		//qDebug() << (draw ? "draw" : "undraw") << "row =" << row << ", col =" << col;
 		QLayoutItem *item = m_layout->itemAtPosition(row, col);
 		if (item) {
 			Square *sq = qobject_cast<Square*>(item->widget());
@@ -187,8 +215,8 @@ void Board::drawBrick(bool draw)
 
 Qt::GlobalColor Board::randomColor()
 {
-	Qt::GlobalColor colors[] = { Qt::black, Qt::blue, Qt::red, Qt::green, Qt::yellow };
-	return colors[qrand() % 5];
+	Qt::GlobalColor colors[] = { Qt::black, Qt::blue, Qt::red, Qt::green, Qt::yellow, Qt::cyan, Qt::darkYellow, Qt::magenta, Qt::darkGray, Qt::darkGreen, Qt::darkBlue, Qt::darkMagenta, Qt::darkRed, Qt::darkCyan };
+	return colors[qrand() % (sizeof colors / sizeof colors[0])];
 }
 
 void Board::moveLeft()

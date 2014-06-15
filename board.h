@@ -18,7 +18,8 @@ enum BrickMoveDirection {
 enum BrickMoveType {
 	Valid = 0,
 	Noop = 1,
-	Collision = 2
+	Collision = 2,
+	GameOver = 3
 };
 
 class Board : public QWidget
@@ -39,13 +40,11 @@ private:
 
 	void initialize();
 	void drawBrick(bool draw = true);
-	BrickMoveType checkBrickMove(BrickMoveDirection move);
+	BrickMoveType checkAndMakeBrickMove(BrickMoveDirection move);
 	Qt::GlobalColor randomColor();
 
 	void dropBrick();
 	void moveBrick(BrickMoveDirection move);
-
-signals:
 
 private slots:
 	void timerMoveDown();
@@ -55,8 +54,8 @@ private slots:
 	void moveDown();
 	void moveFall();
 
-public slots:
-
+signals:
+	void gameReset();
 };
 
 #endif // BOARD_H
