@@ -1,7 +1,8 @@
 #include "brickinfo.h"
 
-BrickInfo::BrickInfo(QList<QPoint> pointList, QColor color) :
-	m_brickColor(color), m_pointList(pointList)
+BrickInfo::BrickInfo(QList<QPoint> pointList, QColor color, QObject *parent) :
+	m_brickColor(color), m_pointList(pointList),
+	QObject(parent)
 {
 	/* calculate the brick height and width */
 	m_width = 0;

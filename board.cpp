@@ -37,6 +37,43 @@ void Board::initialize()
 		}
 	}
 
+	/* fill brick list */
+	QList<QPoint> pointList;
+	/* :: */
+	pointList << QPoint(0,0) << QPoint(0,1)
+		  << QPoint(1,0) << QPoint(1,1);
+	m_brickInfoList << new BrickInfo(pointList, Qt::green, this);
+	pointList.clear();
+	/* .:. */
+	pointList << QPoint(0,0) << QPoint(1,0) << QPoint(2,0)
+				 << QPoint(1,1);
+	m_brickInfoList << new BrickInfo(pointList, Qt::red, this);
+	pointList.clear();
+	/* .... */
+	pointList << QPoint(0,0) << QPoint(1,0) << QPoint(2,0) << QPoint(3,0);
+	m_brickInfoList << new BrickInfo(pointList, Qt::cyan, this);
+	pointList.clear();
+	/* :.. */
+	pointList << QPoint(0,0) << QPoint(1,0) << QPoint(2,0)
+						<< QPoint(2,1);
+	m_brickInfoList << new BrickInfo(pointList, Qt::blue, this);
+	pointList.clear();
+	/* ..: */
+	pointList << QPoint(0,0) << QPoint(1,0) << QPoint(2,0)
+		  << QPoint(0,1);
+	m_brickInfoList << new BrickInfo(pointList, Qt::darkCyan, this);
+	pointList.clear();
+	/* ':. */
+	pointList << QPoint(0,0) << QPoint(1,0)
+				 << QPoint(1,1) << QPoint(2,1);
+	m_brickInfoList << new BrickInfo(pointList, Qt::magenta, this);
+	pointList.clear();
+	/* .:' */
+	pointList                << QPoint(1,0) << QPoint(2,0)
+		  << QPoint(0,1) << QPoint(1,1);
+	m_brickInfoList << new BrickInfo(pointList, Qt::darkGreen, this);
+	pointList.clear();
+
 	connect(new QShortcut(QKeySequence(Qt::Key_Left ), this), SIGNAL(activated()), this, SLOT(moveLeft()));
 	connect(new QShortcut(QKeySequence(Qt::Key_Right), this), SIGNAL(activated()), this, SLOT(moveRight()));
 	connect(new QShortcut(QKeySequence(Qt::Key_Down ), this), SIGNAL(activated()), this, SLOT(moveDown()));
@@ -67,21 +104,7 @@ void Board::dropBrick()
 {
 	Q_ASSERT(m_brickFalling == false);
 
-	QList<QPoint> pointList;
-
-	/* test brick that looks like :: */
-	//pointList << QPoint(0, 0) << QPoint(0, 1)
-	//	  << QPoint(1, 0) << QPoint(1, 1);
-
-	/* test brick that looks line .|. */
-	pointList << QPoint(0,0) << QPoint(1,0) << QPoint(2,0)
-				 << QPoint(1,1);
-
-	if (m_brickInfo) {
-		delete m_brickInfo;
-		m_brickInfo = 0;
-	}
-	m_brickInfo = new BrickInfo(pointList, this->randomColor());
+	m_brickInfo = m_brickInfoList.at(qrand() % m_brickInfoList.size());
 	m_brickPos = QPoint((Board::COLUMNS / 2) - (m_brickInfo->width() / 2), 0 - m_brickInfo->height());
 
 	m_brickFalling = true;
@@ -223,12 +246,12 @@ void Board::drawBrick(bool draw)
 /** Rotate currently falling brick. */
 void Board::rotate(bool right)
 {
-	QList<QPoint> oldList = m_brickInfo->pointList();
-	QColor color = m_brickInfo->brickColor();
+	const QList<QPoint>& oldList = m_brickInfo->pointList();
+	const QColor& color = m_brickInfo->brickColor();
 
 	QList<QPoint> pointList;
 
-	foreach(QPoint p, oldList) {
+	foreach(const QPoint& p, oldList) {
 		QPoint np = QPoint(p.y(), p.x());
 		pointList << np;
 
@@ -247,7 +270,6 @@ void Board::rotate(bool right)
 	/* undraw original brick */
 	this->drawBrick(false);
 
-	delete m_brickInfo;
 	m_brickInfo = new BrickInfo(pointList, color);
 
 	/* draw rotated brick */
@@ -262,13 +284,6 @@ void Board::rotateLeft()
 void Board::rotateRight()
 {
 	this->rotate(true);
-}
-
-/* FIXME */
-Qt::GlobalColor Board::randomColor()
-{
-	Qt::GlobalColor colors[] = { Qt::black, Qt::blue, Qt::red, Qt::green, Qt::yellow, Qt::cyan, Qt::darkYellow, Qt::magenta, Qt::darkGray, Qt::darkGreen, Qt::darkBlue, Qt::darkMagenta, Qt::darkRed, Qt::darkCyan };
-	return colors[qrand() % (sizeof colors / sizeof colors[0])];
 }
 
 void Board::moveLeft()

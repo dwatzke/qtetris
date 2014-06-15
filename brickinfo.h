@@ -9,7 +9,7 @@
 class BrickInfo : public QObject
 {
 public:
-	BrickInfo(QList<QPoint> pointList, QColor color);
+	BrickInfo(QList<QPoint> pointList, QColor color, QObject *parent = 0);
 
 	int width() const;
 	int height() const;

@@ -36,6 +36,7 @@ private:
 	QTimer *m_timer;
 	bool m_brickFalling;
 	BrickInfo *m_brickInfo;
+	QList<BrickInfo*> m_brickInfoList;
 	QPoint m_brickPos;
 
 	void initialize();
