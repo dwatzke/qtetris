@@ -7,6 +7,14 @@ class QGridLayout;
 class QTimer;
 class BrickInfo;
 
+
+enum BrickMove {
+	Down = 0,
+	Left = 1,
+	Right = 2,
+	Fall = 3
+};
+
 class Board : public QWidget
 {
 	Q_OBJECT
@@ -22,12 +30,12 @@ private:
 	bool m_brickFalling;
 	BrickInfo *m_brickInfo;
 	QPoint m_brickPos;
-	QPoint m_lastMove;
 
 	void initialize();
+	void styleBrick(const QList<QPoint>& pointList, QString styleSheet = QString());
 
 	void dropBrick();
-	void moveBrick();
+	void moveBrick(BrickMove move);
 
 signals:
 

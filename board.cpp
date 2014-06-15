@@ -14,8 +14,7 @@ Board::Board(QWidget *parent) :
 	m_timer(new QTimer(this)),
 	m_brickFalling(false),
 	m_brickInfo(0),
-	m_brickPos(Board::COLUMNS / 2, -1),
-	m_lastMove(0, 0)
+	m_brickPos()
 {
 	this->initialize();
 }
@@ -39,7 +38,7 @@ void Board::initialize()
 
 	/* TODO: connect moveLeft, moveRight, forceMoveDown and fallDown */
 	connect(m_timer, SIGNAL(timeout()), this, SLOT(timerMoveDown()));
-	m_timer->start(1000);
+	m_timer->start(400);
 }
 
 /** Carries out the automatic move down.
@@ -50,8 +49,7 @@ void Board::timerMoveDown()
 	if (!m_brickFalling) {
 		this->dropBrick();
 	} else {
-		m_lastMove = QPoint(0, 1);
-		this->moveBrick();
+		this->moveBrick(Down);
 	}
 }
 
@@ -66,7 +64,14 @@ void Board::dropBrick()
 	/* test brick that looks like :: */
 	pointList << QPoint(0, 0) << QPoint(0, 1)
 		  << QPoint(1, 0) << QPoint(1, 1);
+
+	if (m_brickInfo) {
+		delete m_brickInfo;
+		m_brickInfo = 0;
+	}
 	m_brickInfo = new BrickInfo(pointList);
+	m_brickPos = QPoint((Board::COLUMNS / 2) - (m_brickInfo->width() / 2), -1);
+
 	m_brickFalling = true;
 
 	Q_ASSERT(m_brickFalling == true);
@@ -76,13 +81,44 @@ void Board::dropBrick()
  * Assumes that there actually is a falling brick.
  * Sets m_brickFalling = false if the brick just got stuck
  */
-void Board::moveBrick()
+void Board::moveBrick(BrickMove move)
 {
 	Q_ASSERT(m_brickFalling == true);
 
 	/* TODO: undraw previous brick state if any */
 	if (m_brickPos.y() != -1) {
-		//
+		this->styleBrick(m_brickInfo->pointList());
 	}
+
+	QPoint change;
+	switch (move) {
+	case Left:
+		change = QPoint(-1, 0);
+		break;
+	case Right:
+		change = QPoint(1, 0);
+		break;
+	case Down:
+		change = QPoint(0, 1);
+		break;
+	case Fall:
+		/* TODO */
+		break;
+	}
+
+	m_brickPos += change;
+
 	/* TODO: draw new brick state */
+	this->styleBrick(m_brickInfo->pointList(), "background: black");
+}
+
+void Board::styleBrick(const QList<QPoint> &pointList, QString styleSheet)
+{
+	foreach (QPoint p, pointList) {
+		int col = p.x() + m_brickPos.x();
+		int row = p.y() + m_brickPos.y();
+
+		QWidget *btn = m_layout->itemAtPosition(row, col)->widget();
+		btn->setStyleSheet(styleSheet);
+	}
 }
