@@ -1,10 +1,10 @@
 #include "board.h"
 #include "brickinfo.h"
+#include "square.h"
 
 #include <QDebug>
 #include <QGridLayout>
 #include <QLayoutItem>
-#include <QPushButton>
 #include <QShortcut>
 #include <QTimer>
 
@@ -31,17 +31,14 @@ void Board::initialize()
 	/* add some buttons into the layout */
 	for (int row = 0; row < Board::ROWS; row++) {
 		for(int col = 0; col < Board::COLUMNS; col++) {
-			QPushButton * btn = new QPushButton;
-			btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-			btn->setDisabled(true);
-			btn->setDown(true);
-			m_layout->addWidget(btn, row, col);
+			Square * sq = new Square(this);
+			m_layout->addWidget(sq, row, col);
 		}
 	}
 
-	connect(new QShortcut(QKeySequence(Qt::Key_Left), this),  SIGNAL(activated()), this, SLOT(moveLeft()));
+	connect(new QShortcut(QKeySequence(Qt::Key_Left ), this), SIGNAL(activated()), this, SLOT(moveLeft()));
 	connect(new QShortcut(QKeySequence(Qt::Key_Right), this), SIGNAL(activated()), this, SLOT(moveRight()));
-	connect(new QShortcut(QKeySequence(Qt::Key_Down), this),  SIGNAL(activated()), this, SLOT(moveDown()));
+	connect(new QShortcut(QKeySequence(Qt::Key_Down ), this), SIGNAL(activated()), this, SLOT(moveDown()));
 	connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(moveFall()));
 
 	/* TODO: connect moveLeft, moveRight, forceMoveDown and fallDown */
@@ -54,11 +51,10 @@ void Board::initialize()
  */
 void Board::timerMoveDown()
 {
-	if (!m_brickFalling) {
+	if (!m_brickFalling)
 		this->dropBrick();
-	} else {
+	else
 		this->moveBrick(Down);
-	}
 }
 
 /** Drops a new brick.
@@ -77,7 +73,7 @@ void Board::dropBrick()
 		delete m_brickInfo;
 		m_brickInfo = 0;
 	}
-	m_brickInfo = new BrickInfo(pointList);
+	m_brickInfo = new BrickInfo(pointList, this->randomColor());
 	m_brickPos = QPoint((Board::COLUMNS / 2) - (m_brickInfo->width() / 2), 0 - m_brickInfo->height());
 
 	m_brickFalling = true;
@@ -89,15 +85,31 @@ void Board::dropBrick()
  * Assumes that there actually is a falling brick.
  * Sets m_brickFalling = false if the brick just got stuck
  */
-void Board::moveBrick(BrickMove move)
+void Board::moveBrick(BrickMoveDirection move)
 {
-	Q_ASSERT(m_brickFalling == true);
+	if (!m_brickFalling) return;
 
-	/* TODO: undraw previous brick state if any */
-	if (m_brickPos.y() != -1) {
-		this->drawBrick();
+	/* undraw previous brick state if any */
+	this->drawBrick(false);
+
+	BrickMoveType moveType = this->checkBrickMove(move);
+
+	/* draw new brick state */
+	this->drawBrick();
+
+	/* brick hit bottom of board */
+	if (moveType == Collision) {
+		qDebug() << "a collision occured";
+		m_brickFalling = false;
 	}
+}
 
+/** Check if changing brick position using 'change' parameter results in
+  * valid or invalid move.
+  */
+BrickMoveType Board::checkBrickMove(BrickMoveDirection move)
+{
+	/* prepare position change based on direction of movement */
 	QPoint change;
 	switch (move) {
 	case Left:
@@ -114,10 +126,69 @@ void Board::moveBrick(BrickMove move)
 		break;
 	}
 
+	QPoint test = m_brickPos + change;
+
+	if (test.x() < 0 || test.x() > (Board::COLUMNS - m_brickInfo->width()))
+		return Noop;
+
+	if ((test.y() + m_brickInfo->height()) > Board::ROWS)
+		return Collision;
+
+	/* check if any of the squares that new position requires is occupied */
+	const QList<QPoint> &pointList = m_brickInfo->pointList();
+	foreach (QPoint p, pointList) {
+		int col = p.x() + test.x();
+		int row = p.y() + test.y();
+
+		if (row < 0)
+			continue;
+
+		Square *sq = qobject_cast<Square*>(m_layout->itemAtPosition(row, col)->widget());
+		qDebug() << "occupy test for" << "row =" << row << ", col =" << col;
+		if (sq->isOccupied()) {
+			if (change == QPoint(-1, 0) || change == QPoint(1, 0))
+				return Noop;
+			else
+				return Collision;
+		}
+	}
+
+	/* shift position */
 	m_brickPos += change;
 
-	/* TODO: draw new brick state */
-	this->drawBrick("background: black");
+	return Valid;
+}
+
+/** Draws (or undraws if draw=false) current brick on m_brickPos.
+  */
+void Board::drawBrick(bool draw)
+{
+	const QList<QPoint> &pointList = m_brickInfo->pointList();
+	const QColor& color = m_brickInfo->brickColor();
+
+	foreach (QPoint p, pointList) {
+		int col = p.x() + m_brickPos.x();
+		int row = p.y() + m_brickPos.y();
+
+		//qDebug() << (draw ? "draw" : "undraw") << "row =" << row << ", col =" << col;
+		QLayoutItem *item = m_layout->itemAtPosition(row, col);
+		if (item) {
+			Square *sq = qobject_cast<Square*>(item->widget());
+			if (draw) {
+				qDebug() << "occupying row =" << row << ", col =" << col;
+				sq->setSquareColor(color);
+			} else {
+				qDebug() << "freeing row =" << row << ", col =" << col;
+				sq->resetSquareColor();
+			}
+		}
+	}
+}
+
+Qt::GlobalColor Board::randomColor()
+{
+	Qt::GlobalColor colors[] = { Qt::black, Qt::blue, Qt::red, Qt::green, Qt::yellow };
+	return colors[qrand() % 5];
 }
 
 void Board::moveLeft()
@@ -138,17 +209,4 @@ void Board::moveDown()
 void Board::moveFall()
 {
 	this->moveBrick(Fall);
-}
-
-void Board::drawBrick(const QString &styleSheet)
-{
-	const QList<QPoint> &pointList = m_brickInfo->pointList();
-
-	foreach (QPoint p, pointList) {
-		int col = p.x() + m_brickPos.x();
-		int row = p.y() + m_brickPos.y();
-
-		QLayoutItem *item = m_layout->itemAtPosition(row, col);
-		if (item) item->widget()->setStyleSheet(styleSheet);
-	}
 }

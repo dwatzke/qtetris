@@ -1,7 +1,7 @@
 #include "brickinfo.h"
 
-BrickInfo::BrickInfo(QList<QPoint> pointList) :
-	m_pointList(pointList)
+BrickInfo::BrickInfo(QList<QPoint> pointList, QColor color) :
+	m_brickColor(color), m_pointList(pointList)
 {
 	/* calculate the brick height and width */
 	m_width = 0;
@@ -30,4 +30,9 @@ int BrickInfo::height() const
 const QList<QPoint>& BrickInfo::pointList()
 {
 	return m_pointList;
+}
+
+const QColor& BrickInfo::brickColor()
+{
+	return m_brickColor;
 }

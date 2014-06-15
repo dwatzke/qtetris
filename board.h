@@ -8,11 +8,17 @@ class QTimer;
 class BrickInfo;
 
 
-enum BrickMove {
+enum BrickMoveDirection {
 	Down = 0,
 	Left = 1,
 	Right = 2,
 	Fall = 3
+};
+
+enum BrickMoveType {
+	Valid = 0,
+	Noop = 1,
+	Collision = 2
 };
 
 class Board : public QWidget
@@ -32,10 +38,12 @@ private:
 	QPoint m_brickPos;
 
 	void initialize();
-	void drawBrick(const QString &styleSheet = QString());
+	void drawBrick(bool draw = true);
+	BrickMoveType checkBrickMove(BrickMoveDirection move);
+	Qt::GlobalColor randomColor();
 
 	void dropBrick();
-	void moveBrick(BrickMove move);
+	void moveBrick(BrickMoveDirection move);
 
 signals:
 
