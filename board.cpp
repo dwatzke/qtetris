@@ -270,6 +270,9 @@ void Board::rotate(bool right)
 	/* undraw original brick */
 	this->drawBrick(false);
 
+	/* if ptr not in brick list, delete it */
+	if (!m_brickInfoList.contains(m_brickInfo))
+		delete m_brickInfo;
 	m_brickInfo = new BrickInfo(pointList, color);
 
 	/* draw rotated brick */
