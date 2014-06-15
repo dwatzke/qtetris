@@ -32,7 +32,7 @@ private:
 	QPoint m_brickPos;
 
 	void initialize();
-	void styleBrick(const QList<QPoint>& pointList, QString styleSheet = QString());
+	void drawBrick(const QString &styleSheet = QString());
 
 	void dropBrick();
 	void moveBrick(BrickMove move);
@@ -41,6 +41,11 @@ signals:
 
 private slots:
 	void timerMoveDown();
+
+	void moveLeft();
+	void moveRight();
+	void moveDown();
+	void moveFall();
 
 public slots:
 

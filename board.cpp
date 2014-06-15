@@ -1,8 +1,11 @@
 #include "board.h"
 #include "brickinfo.h"
 
+#include <QDebug>
 #include <QGridLayout>
+#include <QLayoutItem>
 #include <QPushButton>
+#include <QShortcut>
 #include <QTimer>
 
 const int Board::ROWS = 20;
@@ -35,6 +38,11 @@ void Board::initialize()
 			m_layout->addWidget(btn, row, col);
 		}
 	}
+
+	connect(new QShortcut(QKeySequence(Qt::Key_Left), this),  SIGNAL(activated()), this, SLOT(moveLeft()));
+	connect(new QShortcut(QKeySequence(Qt::Key_Right), this), SIGNAL(activated()), this, SLOT(moveRight()));
+	connect(new QShortcut(QKeySequence(Qt::Key_Down), this),  SIGNAL(activated()), this, SLOT(moveDown()));
+	connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(moveFall()));
 
 	/* TODO: connect moveLeft, moveRight, forceMoveDown and fallDown */
 	connect(m_timer, SIGNAL(timeout()), this, SLOT(timerMoveDown()));
@@ -70,7 +78,7 @@ void Board::dropBrick()
 		m_brickInfo = 0;
 	}
 	m_brickInfo = new BrickInfo(pointList);
-	m_brickPos = QPoint((Board::COLUMNS / 2) - (m_brickInfo->width() / 2), -1);
+	m_brickPos = QPoint((Board::COLUMNS / 2) - (m_brickInfo->width() / 2), 0 - m_brickInfo->height());
 
 	m_brickFalling = true;
 
@@ -87,7 +95,7 @@ void Board::moveBrick(BrickMove move)
 
 	/* TODO: undraw previous brick state if any */
 	if (m_brickPos.y() != -1) {
-		this->styleBrick(m_brickInfo->pointList());
+		this->drawBrick();
 	}
 
 	QPoint change;
@@ -109,16 +117,38 @@ void Board::moveBrick(BrickMove move)
 	m_brickPos += change;
 
 	/* TODO: draw new brick state */
-	this->styleBrick(m_brickInfo->pointList(), "background: black");
+	this->drawBrick("background: black");
 }
 
-void Board::styleBrick(const QList<QPoint> &pointList, QString styleSheet)
+void Board::moveLeft()
 {
+	this->moveBrick(Left);
+}
+
+void Board::moveRight()
+{
+	this->moveBrick(Right);
+}
+
+void Board::moveDown()
+{
+	this->moveBrick(Down);
+}
+
+void Board::moveFall()
+{
+	this->moveBrick(Fall);
+}
+
+void Board::drawBrick(const QString &styleSheet)
+{
+	const QList<QPoint> &pointList = m_brickInfo->pointList();
+
 	foreach (QPoint p, pointList) {
 		int col = p.x() + m_brickPos.x();
 		int row = p.y() + m_brickPos.y();
 
-		QWidget *btn = m_layout->itemAtPosition(row, col)->widget();
-		btn->setStyleSheet(styleSheet);
+		QLayoutItem *item = m_layout->itemAtPosition(row, col);
+		if (item) item->widget()->setStyleSheet(styleSheet);
 	}
 }
