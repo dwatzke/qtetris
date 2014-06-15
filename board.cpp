@@ -41,6 +41,8 @@ void Board::initialize()
 	connect(new QShortcut(QKeySequence(Qt::Key_Right), this), SIGNAL(activated()), this, SLOT(moveRight()));
 	connect(new QShortcut(QKeySequence(Qt::Key_Down ), this), SIGNAL(activated()), this, SLOT(moveDown()));
 	connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(moveFall()));
+	connect(new QShortcut(QKeySequence(Qt::Key_A    ), this), SIGNAL(activated()), this, SLOT(rotateLeft()));
+	connect(new QShortcut(QKeySequence(Qt::Key_D    ), this), SIGNAL(activated()), this, SLOT(rotateRight()));
 
 	/* TODO: connect moveLeft, moveRight, forceMoveDown and fallDown */
 	connect(m_timer, SIGNAL(timeout()), this, SLOT(timerMoveDown()));
@@ -66,9 +68,14 @@ void Board::dropBrick()
 	Q_ASSERT(m_brickFalling == false);
 
 	QList<QPoint> pointList;
+
 	/* test brick that looks like :: */
-	pointList << QPoint(0, 0) << QPoint(0, 1)
-		  << QPoint(1, 0) << QPoint(1, 1);
+	//pointList << QPoint(0, 0) << QPoint(0, 1)
+	//	  << QPoint(1, 0) << QPoint(1, 1);
+
+	/* test brick that looks line .|. */
+	pointList << QPoint(0,0) << QPoint(1,0) << QPoint(2,0)
+				 << QPoint(1,1);
 
 	if (m_brickInfo) {
 		delete m_brickInfo;
@@ -94,21 +101,21 @@ void Board::moveBrick(BrickMoveDirection move)
 	this->drawBrick(false);
 
 	/* determine if move causes collision and proceed with it if not */
-	BrickMoveType moveType = this->checkAndMakeBrickMove(move);
+	BrickMoveResult moveType = this->checkAndMakeBrickMove(move);
 
-	/* check for gameover */
+	/* handle game over */
 	if (moveType == GameOver) {
 		disconnect(m_timer, SIGNAL(timeout()), this, SLOT(timerMoveDown()));
 		int ret = QMessageBox::critical(this,
 			tr("Game over"), tr("Game over - bricks collided!"),
 			QMessageBox::Retry, QMessageBox::Close);
 		switch(ret) {
-		case QMessageBox::Retry:
-			emit gameReset();
-			break;
-		default:
-			/* noop */
-			break;
+			case QMessageBox::Retry:
+				emit gameReset();
+				break;
+			default:
+				/* noop */
+				break;
 		}
 	}
 
@@ -117,7 +124,7 @@ void Board::moveBrick(BrickMoveDirection move)
 
 	/* if there was collision, send another brick */
 	if (moveType == Collision) {
-		qDebug() << "a collision occured";
+		qDebug() << "collision occured";
 		m_brickFalling = false;
 	}
 }
@@ -125,7 +132,7 @@ void Board::moveBrick(BrickMoveDirection move)
 /** Check if changing brick position using 'change' parameter results in
   * valid or invalid move. If it's valid, change the position.
   */
-BrickMoveType Board::checkAndMakeBrickMove(BrickMoveDirection move)
+BrickMoveResult Board::checkAndMakeBrickMove(BrickMoveDirection move)
 {
 	/* prepare position change based on direction of movement */
 	QPoint change;
@@ -185,7 +192,7 @@ BrickMoveType Board::checkAndMakeBrickMove(BrickMoveDirection move)
 	/* shift position */
 	m_brickPos += change;
 
-	return Valid;
+	return Ok;
 }
 
 /** Draws (or undraws if draw=false) current brick on m_brickPos.
@@ -213,6 +220,51 @@ void Board::drawBrick(bool draw)
 	}
 }
 
+/** Rotate currently falling brick. */
+void Board::rotate(bool right)
+{
+	QList<QPoint> oldList = m_brickInfo->pointList();
+	QColor color = m_brickInfo->brickColor();
+
+	QList<QPoint> pointList;
+
+	foreach(QPoint p, oldList) {
+		QPoint np = QPoint(p.y(), p.x());
+		pointList << np;
+
+		/* check for collision */
+		if (oldList.contains(np))
+			continue; /* skip collision with itself */
+		QPoint tmp = np + m_brickPos;
+		QLayoutItem *item = m_layout->itemAtPosition(tmp.y(), tmp.x());
+		/* noop if collision would happen */
+		if (item != 0 && qobject_cast<Square*>(item->widget())->isOccupied()) {
+			qDebug() << "prevented rotate collision";
+			return;
+		}
+	}
+
+	/* undraw original brick */
+	this->drawBrick(false);
+
+	delete m_brickInfo;
+	m_brickInfo = new BrickInfo(pointList, color);
+
+	/* draw rotated brick */
+	this->drawBrick();
+}
+
+void Board::rotateLeft()
+{
+	this->rotate(false);
+}
+
+void Board::rotateRight()
+{
+	this->rotate(true);
+}
+
+/* FIXME */
 Qt::GlobalColor Board::randomColor()
 {
 	Qt::GlobalColor colors[] = { Qt::black, Qt::blue, Qt::red, Qt::green, Qt::yellow, Qt::cyan, Qt::darkYellow, Qt::magenta, Qt::darkGray, Qt::darkGreen, Qt::darkBlue, Qt::darkMagenta, Qt::darkRed, Qt::darkCyan };

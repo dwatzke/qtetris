@@ -1,12 +1,28 @@
 #include "mainwindow.h"
-
 #include "board.h"
+
+#include <QMenu>
+#include <QMenuBar>
 
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent),
 	  m_board(0)
 {
+	this->initialize();
 	this->resetBoard();
+}
+
+void MainWindow::initialize()
+{
+	/* TODO: add menu bar */
+	/* QMenuBar *mb = new QMenuBar;
+
+	QMenu* fileMenu = new QMenu(mb);
+	fileMenu->addAction(tr("&Reset game"), this, SLOT(resetBoard()));
+
+	mb->addMenu(fileMenu);
+
+	this->setMenuBar(mb); */
 }
 
 void MainWindow::resetBoard()
