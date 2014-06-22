@@ -15,10 +15,10 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     board.cpp \
-    brickinfo.cpp \
-    square.cpp
+    square.cpp \
+    brick.cpp
 
 HEADERS  += mainwindow.h \
     board.h \
-    brickinfo.h \
-    square.h
+    square.h \
+    brick.h

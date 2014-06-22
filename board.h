@@ -5,8 +5,7 @@
 
 class QGridLayout;
 class QTimer;
-class BrickInfo;
-
+class Brick;
 
 enum BrickMoveDirection {
 	Down = 0,
@@ -35,14 +34,13 @@ private:
 	QGridLayout *m_layout;
 	QTimer *m_timer;
 	bool m_brickFalling;
-	BrickInfo *m_brickInfo;
-	QList<BrickInfo*> m_brickInfoList;
+	Brick *m_brick;
+	QList<Brick*> m_brickList;
 	QPoint m_brickPos;
 
-	void initialize();
 	void drawBrick(bool draw = true);
+	BrickMoveResult checkBrickMove(const QPoint position, const BrickMoveDirection move);
 	BrickMoveResult checkAndMakeBrickMove(BrickMoveDirection move);
-	Qt::GlobalColor randomColor();
 
 	void dropBrick();
 	void moveBrick(BrickMoveDirection move);

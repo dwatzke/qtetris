@@ -1,5 +1,5 @@
 #include "board.h"
-#include "brickinfo.h"
+#include "brick.h"
 #include "square.h"
 
 #include <QDebug>
@@ -19,13 +19,8 @@ Board::Board(QWidget *parent) :
 	m_layout(new QGridLayout(this)),
 	m_timer(new QTimer(this)),
 	m_brickFalling(false),
-	m_brickInfo(0),
+	m_brick(0),
 	m_brickPos()
-{
-	this->initialize();
-}
-
-void Board::initialize()
 {
 	/* remove spaces between the widgets in the layout */
 	m_layout->setSpacing(0);
@@ -39,42 +34,122 @@ void Board::initialize()
 		}
 	}
 
-	/* fill brick list */
-	QList<QPoint> pointList;
+	/* fill the brick list */
+	QList<QList<QPoint> > pointLists;
+	QList<QPoint> points;
+
 	/* :: */
-	pointList << QPoint(0,0) << QPoint(0,1)
-		  << QPoint(1,0) << QPoint(1,1);
-	m_brickInfoList << new BrickInfo(pointList, Qt::green, this);
-	pointList.clear();
+	points << QPoint(0,0) << QPoint(0,1)
+	       << QPoint(1,0) << QPoint(1,1);
+	pointLists << points;
+	points.clear();
+	m_brickList << new Brick(pointLists, Qt::green, this);
+	pointLists.clear();
+
 	/* .:. */
-	pointList << QPoint(0,0) << QPoint(1,0) << QPoint(2,0)
-				 << QPoint(1,1);
-	m_brickInfoList << new BrickInfo(pointList, Qt::red, this);
-	pointList.clear();
+	points <<                QPoint(1,0)
+	       << QPoint(0,1) << QPoint(1,1) << QPoint(2,1);
+	pointLists << points;
+	points.clear();
+	points << QPoint(0,0)
+	       << QPoint(0,1) << QPoint(1,1)
+	       << QPoint(0,2);
+	pointLists << points;
+	points.clear();
+	points << QPoint(0,0) << QPoint(1,0) << QPoint(2,0)
+			      << QPoint(1,1);
+	pointLists << points;
+	points.clear();
+	points	              << QPoint(1,0)
+	       << QPoint(0,1) << QPoint(1,1)
+			      << QPoint(1,2);
+	pointLists << points;
+	points.clear();
+	m_brickList << new Brick(pointLists, Qt::red, this);
+	pointLists.clear();
+
 	/* .... */
-	pointList << QPoint(0,0) << QPoint(1,0) << QPoint(2,0) << QPoint(3,0);
-	m_brickInfoList << new BrickInfo(pointList, Qt::cyan, this);
-	pointList.clear();
+	points << QPoint(0,0) << QPoint(1,0) << QPoint(2,0) << QPoint(3,0);
+	pointLists << points;
+	points.clear();
+	points << QPoint(0,0)
+	       << QPoint(0,1)
+	       << QPoint(0,2)
+	       << QPoint(0,3);
+	pointLists << points;
+	points.clear();
+	m_brickList << new Brick(pointLists, Qt::cyan, this);
+	pointLists.clear();
+
 	/* :.. */
-	pointList << QPoint(0,0) << QPoint(1,0) << QPoint(2,0)
-						<< QPoint(2,1);
-	m_brickInfoList << new BrickInfo(pointList, Qt::blue, this);
-	pointList.clear();
+	points << QPoint(0,0)
+	       << QPoint(0,1) << QPoint(1,1) << QPoint(2,1);
+	pointLists << points;
+	points.clear();
+	points << QPoint(0,0) << QPoint(1,0)
+	       << QPoint(0,1)
+	       << QPoint(0,2);
+	pointLists << points;
+	points.clear();
+	points << QPoint(0,0) << QPoint(1,0) << QPoint(2,0)
+					     << QPoint(2,1);
+	pointLists << points;
+	points.clear();
+	points                << QPoint(1,0)
+			      << QPoint(1,1)
+	       << QPoint(0,2) << QPoint(1,2);
+	pointLists << points;
+	points.clear();
+	m_brickList << new Brick(pointLists, Qt::blue, this);
+	pointLists.clear();
+
 	/* ..: */
-	pointList << QPoint(0,0) << QPoint(1,0) << QPoint(2,0)
-		  << QPoint(0,1);
-	m_brickInfoList << new BrickInfo(pointList, Qt::darkCyan, this);
-	pointList.clear();
+	points << QPoint(0,0) << QPoint(1,0) << QPoint(2,0)
+	       << QPoint(0,1);
+	pointLists << points;
+	points.clear();
+	points << QPoint(0,0) << QPoint(1,0)
+			      << QPoint(1,1)
+			      << QPoint(1,2);
+	pointLists << points;
+	points.clear();
+	points		                     << QPoint(2,0)
+	       << QPoint(0,1) << QPoint(1,1) << QPoint(2,1);
+	pointLists << points;
+	points.clear();
+	points << QPoint(0,0)
+	       << QPoint(0,1)
+	       << QPoint(0,2) << QPoint(1,2);
+	pointLists << points;
+	points.clear();
+	m_brickList << new Brick(pointLists, Qt::darkCyan, this);
+	pointLists.clear();
+
 	/* ':. */
-	pointList << QPoint(0,0) << QPoint(1,0)
-				 << QPoint(1,1) << QPoint(2,1);
-	m_brickInfoList << new BrickInfo(pointList, Qt::magenta, this);
-	pointList.clear();
+	points << QPoint(0,0) << QPoint(1,0)
+			      << QPoint(1,1) << QPoint(2,1);
+	pointLists << points;
+	points.clear();
+	points                << QPoint(1,0)
+	       << QPoint(0,1) << QPoint(1,1)
+	       << QPoint(0,2);
+	pointLists << points;
+	points.clear();
+	m_brickList << new Brick(pointLists, Qt::magenta, this);
+	pointLists.clear();
+
 	/* .:' */
-	pointList                << QPoint(1,0) << QPoint(2,0)
-		  << QPoint(0,1) << QPoint(1,1);
-	m_brickInfoList << new BrickInfo(pointList, Qt::darkGreen, this);
-	pointList.clear();
+	points                << QPoint(1,0) << QPoint(2,0)
+	       << QPoint(0,1) << QPoint(1,1);
+	pointLists << points;
+	points.clear();
+	points << QPoint(0,0)
+	       << QPoint(0,1) << QPoint(1,1)
+			      << QPoint(1,2);
+	pointLists << points;
+	points.clear();
+	m_brickList << new Brick(pointLists, Qt::darkGreen, this);
+	pointLists.clear();
 
 	connect(new QShortcut(QKeySequence(Qt::Key_Left ), this), SIGNAL(activated()), this, SLOT(moveLeft()));
 	connect(new QShortcut(QKeySequence(Qt::Key_Right), this), SIGNAL(activated()), this, SLOT(moveRight()));
@@ -82,8 +157,10 @@ void Board::initialize()
 	connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(moveFall()));
 	connect(new QShortcut(QKeySequence(Qt::Key_Up   ), this), SIGNAL(activated()), this, SLOT(rotate()));
 
-	/* TODO: connect moveLeft, moveRight, forceMoveDown and fallDown */
 	connect(m_timer, SIGNAL(timeout()), this, SLOT(timerMoveDown()));
+	/* the first brick would fall automatically but the rotate
+	 * would crash the game if pressed before the first timer timeout occured */
+	this->dropBrick();
 	m_timer->start(400);
 }
 
@@ -105,8 +182,8 @@ void Board::dropBrick()
 {
 	Q_ASSERT(m_brickFalling == false);
 
-	m_brickInfo = m_brickInfoList.at(qrand() % m_brickInfoList.size());
-	m_brickPos = QPoint((Board::COLUMNS / 2) - (m_brickInfo->width() / 2), 0 - m_brickInfo->height());
+	m_brick = m_brickList.at(qrand() % m_brickList.size());
+	m_brickPos = QPoint((Board::COLUMNS / 2) - (m_brick->width() / 2), 0 - m_brick->height());
 
 	m_brickFalling = true;
 
@@ -121,32 +198,28 @@ void Board::moveBrick(BrickMoveDirection move)
 {
 	if (!m_brickFalling) return;
 
-	/* undraw previous brick state if any */
+	/* undraw the previous brick state if any */
 	this->drawBrick(false);
 
-	/* determine if move causes collision and proceed with it if not */
+	/* determine if the move causes collision and proceed with it if not */
 	BrickMoveResult moveType = this->checkAndMakeBrickMove(move);
 
-	/* handle game over */
+	/* handle the game over */
 	if (moveType == GameOver)
 		this->gameOver();
 
-	/* draw new brick state */
+	/* draw the new brick state */
 	this->drawBrick();
 
-	/* TODO: should this be placed before or after drawBrick() ? */
-	if (moveType == Collision)
-		this->removeFilledRows();
-
-	/* if there was collision, send another brick */
+	/* if there was a collision, send another brick */
 	if (moveType == Collision) {
-		qDebug() << "collision occured";
+		this->removeFilledRows();
 		m_brickFalling = false;
 	}
 }
 
 void Board::removeFilledRows() {
-	qDebug() << "removing filled rows";
+	//qDebug() << "removing filled rows";
 
 	/** 'upper' and 'lower' have opposite meaning in graphical
 	 * and gridlayout-indexing point of view - I'm talking about
@@ -154,7 +227,7 @@ void Board::removeFilledRows() {
 	 * (i.e. lower squares have higher row indexes)
 	 */
 	const int upperBound = m_brickPos.y();
-	const int lowerBound = upperBound + m_brickInfo->height()-1;
+	const int lowerBound = upperBound + m_brick->height()-1;
 
 	QList<int> filledRowList;
 	QList<Square*> filledSquareList;
@@ -185,7 +258,7 @@ void Board::removeFilledRows() {
 	if (filledRowList.isEmpty())
 		return;
 
-	/* move non-filled rows down over filled rows */
+	/* move the non-filled rows down over filled rows */
 	int shift = 1;
 	for (int row = filledRowList.first()-1; row >= 0; row--) {
 		if (filledRowList.contains(row)) {
@@ -237,6 +310,49 @@ void Board::gameOver() {
 	}
 }
 
+BrickMoveResult Board::checkBrickMove(const QPoint position, const BrickMoveDirection move)
+{
+	/* horizontal board bounds */
+	if (position.x() < 0 || position.x() > (Board::COLUMNS - m_brick->width())) {
+		/* if we hit horizontal bounds while moving down, then that's a bug! */
+		Q_ASSERT(move == Left || move == Right);
+		return Noop;
+	}
+
+	/* vertical end of board */
+	if ((position.y() + m_brick->height()) > Board::ROWS)
+		return Collision;
+
+	/* check if any of the squares that new position requires is occupied */
+	const QList<QPoint> &pointList = m_brick->pointList();
+	foreach (QPoint p, pointList) {
+		int col = p.x() + position.x();
+		int row = p.y() + position.y();
+
+		if (row < 0)
+			continue;
+
+		Square *sq = qobject_cast<Square*>(m_layout->itemAtPosition(row, col)->widget());
+
+		/* if square is occupied */
+		if (sq->isOccupied()) {
+			/* if we wanted to move left or right */
+			if (move == Left || move == Right) {
+				/* do nothing */
+				return Noop;
+			} else {
+				/* if collision occurs on the first row, it's gameover */
+				if (row != 0)
+					return Collision;
+				else
+					return GameOver;
+			}
+		}
+	}
+
+	return Ok;
+}
+
 /** Check if changing brick position using 'change' parameter results in
   * valid or invalid move. If it's valid, change the position.
   */
@@ -259,46 +375,13 @@ BrickMoveResult Board::checkAndMakeBrickMove(BrickMoveDirection move)
 		break;
 	}
 
-	QPoint test = m_brickPos + change;
+	BrickMoveResult res = this->checkBrickMove(m_brickPos + change, move);
 
-	/* horizontal board bounds */
-	if (test.x() < 0 || test.x() > (Board::COLUMNS - m_brickInfo->width()))
-		return Noop;
-
-	/* vertical end of board */
-	if ((test.y() + m_brickInfo->height()) > Board::ROWS)
-		return Collision;
-
-	/* check if any of the squares that new position requires is occupied */
-	const QList<QPoint> &pointList = m_brickInfo->pointList();
-	foreach (QPoint p, pointList) {
-		int col = p.x() + test.x();
-		int row = p.y() + test.y();
-
-		if (row < 0)
-			continue;
-
-		Square *sq = qobject_cast<Square*>(m_layout->itemAtPosition(row, col)->widget());
-		//qDebug() << "occupy test for" << "row =" << row << ", col =" << col;
-
-		/* if square is occupied */
-		if (sq->isOccupied()) {
-			/* if we wanted to move left or right */
-			if (move == Left || move == Right) {
-				/* do nothing */
-				return Noop;
-			} else {
-				/* if collision occurs on the first row, it's gameover */
-				if (row != 0)
-					return Collision;
-				else
-					return GameOver;
-			}
-		}
-	}
-
-	/* shift position */
-	m_brickPos += change;
+	if (res == Ok)
+		/* shift position */
+		m_brickPos += change;
+	else
+		return res;
 
 	return Ok;
 }
@@ -307,8 +390,8 @@ BrickMoveResult Board::checkAndMakeBrickMove(BrickMoveDirection move)
   */
 void Board::drawBrick(bool draw)
 {
-	const QList<QPoint> &pointList = m_brickInfo->pointList();
-	const QColor& color = m_brickInfo->brickColor();
+	const QList<QPoint> &pointList = m_brick->pointList();
+	const QColor& color = m_brick->brickColor();
 
 	foreach (QPoint p, pointList) {
 		int col = p.x() + m_brickPos.x();
@@ -331,39 +414,15 @@ void Board::drawBrick(bool draw)
 /** Rotate currently falling brick. */
 void Board::rotate()
 {
-	const QList<QPoint>& oldList = m_brickInfo->pointList();
-	const QColor& color = m_brickInfo->brickColor();
-
-	QList<QPoint> pointList;
-
-	foreach(const QPoint& p, oldList) {
-		QPoint np = QPoint(p.y(), p.x());
-		pointList << np;
-
-		/* check for collision */
-		if (oldList.contains(np))
-			continue; /* skip collision with itself */
-		QPoint tmp = np + m_brickPos;
-		QLayoutItem *item = m_layout->itemAtPosition(tmp.y(), tmp.x());
-		if (!item) {
-			/* TODO: try moving the brick left or right */
-			qDebug() << "prevented rotation out of bounds";
-			return;
-		}
-		/* noop if collision would happen */
-		if (item && qobject_cast<Square*>(item->widget())->isOccupied()) {
-			qDebug() << "prevented rotate collision";
-			return;
-		}
-	}
-
 	/* undraw original brick */
 	this->drawBrick(false);
 
-	/* if ptr not in brick list, delete it */
-	if (!m_brickInfoList.contains(m_brickInfo))
-		delete m_brickInfo;
-	m_brickInfo = new BrickInfo(pointList, color);
+	/* rotate the brick */
+	m_brick->rotate();
+
+	/* check rotate collision */
+	if (this->checkBrickMove(m_brickPos, Right) != Ok)
+		m_brick->unrotate();
 
 	/* draw rotated brick */
 	this->drawBrick();
