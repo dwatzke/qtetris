@@ -10,8 +10,7 @@ class Brick;
 enum BrickMoveDirection {
 	Down = 0,
 	Left = 1,
-	Right = 2,
-	Fall = 3
+	Right = 2
 };
 
 enum BrickMoveResult {
@@ -33,7 +32,6 @@ public:
 private:
 	QGridLayout *m_layout;
 	QTimer *m_timer;
-	bool m_brickFalling;
 	Brick *m_brick;
 	QList<Brick*> m_brickList;
 	QPoint m_brickPos;
@@ -43,7 +41,7 @@ private:
 	BrickMoveResult checkAndMakeBrickMove(BrickMoveDirection move);
 
 	void dropBrick();
-	void moveBrick(BrickMoveDirection move);
+	BrickMoveResult moveBrick(BrickMoveDirection move);
 	void gameOver();
 	void removeFilledRows();
 

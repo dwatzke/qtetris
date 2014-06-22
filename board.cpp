@@ -18,7 +18,6 @@ Board::Board(QWidget *parent) :
 	QWidget(parent),
 	m_layout(new QGridLayout(this)),
 	m_timer(new QTimer(this)),
-	m_brickFalling(false),
 	m_brick(0),
 	m_brickPos()
 {
@@ -161,7 +160,8 @@ Board::Board(QWidget *parent) :
 	/* the first brick would fall automatically but the rotate
 	 * would crash the game if pressed before the first timer timeout occured */
 	this->dropBrick();
-	m_timer->start(400);
+	m_timer->setInterval(400);
+	m_timer->start();
 }
 
 /** Carries out the automatic move down.
@@ -169,10 +169,7 @@ Board::Board(QWidget *parent) :
  */
 void Board::timerMoveDown()
 {
-	if (!m_brickFalling)
-		this->dropBrick();
-	else
-		this->moveBrick(Down);
+	this->moveBrick(Down);
 }
 
 /** Drops a new brick.
@@ -180,42 +177,38 @@ void Board::timerMoveDown()
  */
 void Board::dropBrick()
 {
-	Q_ASSERT(m_brickFalling == false);
-
+	m_timer->start();
 	m_brick = m_brickList.at(qrand() % m_brickList.size());
 	m_brickPos = QPoint((Board::COLUMNS / 2) - (m_brick->width() / 2), 0 - m_brick->height());
-
-	m_brickFalling = true;
-
-	Q_ASSERT(m_brickFalling == true);
 }
 
 /** Moves the currently falling brick.
  * Assumes that there actually is a falling brick.
  * Sets m_brickFalling = false if the brick just got stuck
  */
-void Board::moveBrick(BrickMoveDirection move)
+BrickMoveResult Board::moveBrick(BrickMoveDirection move)
 {
-	if (!m_brickFalling) return;
+	//if (!m_brickFalling) return Noop;
 
 	/* undraw the previous brick state if any */
 	this->drawBrick(false);
 
 	/* determine if the move causes collision and proceed with it if not */
-	BrickMoveResult moveType = this->checkAndMakeBrickMove(move);
+	BrickMoveResult res = this->checkAndMakeBrickMove(move);
 
 	/* handle the game over */
-	if (moveType == GameOver)
+	if (res == GameOver)
 		this->gameOver();
 
 	/* draw the new brick state */
 	this->drawBrick();
 
-	/* if there was a collision, send another brick */
-	if (moveType == Collision) {
+	if (res == Collision) {
 		this->removeFilledRows();
-		m_brickFalling = false;
+		this->dropBrick();
 	}
+
+	return res;
 }
 
 void Board::removeFilledRows() {
@@ -235,7 +228,14 @@ void Board::removeFilledRows() {
 	for (int row = lowerBound; row >= upperBound; row--) {
 		bool filled = true;
 		for (int col = 0; col < Board::COLUMNS; col++) {
-			Square *sq = qobject_cast<Square*>(m_layout->itemAtPosition(row, col)->widget());
+			QLayoutItem *item = m_layout->itemAtPosition(row, col);
+
+			if (!item) {
+				filled = false;
+				break;
+			}
+
+			Square *sq = qobject_cast<Square*>(item->widget());
 			if (!sq->isOccupied()) {
 				filled = false;
 				break;
@@ -370,9 +370,6 @@ BrickMoveResult Board::checkAndMakeBrickMove(BrickMoveDirection move)
 	case Down:
 		change = QPoint(0, 1);
 		break;
-	case Fall:
-		/* TODO */
-		break;
 	}
 
 	BrickMoveResult res = this->checkBrickMove(m_brickPos + change, move);
@@ -445,5 +442,5 @@ void Board::moveDown()
 
 void Board::moveFall()
 {
-	this->moveBrick(Fall);
+	while (this->moveBrick(Down) == Ok) {};
 }

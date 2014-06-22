@@ -15,14 +15,14 @@ MainWindow::MainWindow(QWidget *parent)
 void MainWindow::initialize()
 {
 	/* TODO: add menu bar */
-	/* QMenuBar *mb = new QMenuBar;
+	QMenuBar *mb = new QMenuBar;
 
 	QMenu* fileMenu = new QMenu(mb);
 	fileMenu->addAction(tr("&Reset game"), this, SLOT(resetBoard()));
 
 	mb->addMenu(fileMenu);
 
-	this->setMenuBar(mb); */
+	this->setMenuBar(mb);
 }
 
 void MainWindow::resetBoard()
