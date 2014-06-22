@@ -16,6 +16,9 @@ BrickInfo::BrickInfo(QList<QPoint> pointList, QColor color, QObject *parent) :
 	/* count from 1 (not 0) */
 	m_width += 1;
 	m_height += 1;
+
+	Q_ASSERT(m_width > 0);
+	Q_ASSERT(m_height > 0);
 }
 
 int BrickInfo::width() const

@@ -10,7 +10,7 @@ public:
 	explicit Square(QWidget *parent = 0);
 
 	void setSquareColor(QColor color);
-	void resetSquareColor();
+	void freeSquare();
 
 	bool isOccupied() const;
 

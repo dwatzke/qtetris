@@ -46,8 +46,10 @@ private:
 
 	void dropBrick();
 	void moveBrick(BrickMoveDirection move);
+	void gameOver();
+	void removeFilledRows();
 
-	void rotate(bool right);
+	void moveRow(const int row, const int shift);
 
 private slots:
 	void timerMoveDown();
@@ -57,8 +59,7 @@ private slots:
 	void moveDown();
 	void moveFall();
 
-	void rotateLeft();
-	void rotateRight();
+	void rotate();
 
 signals:
 	void gameReset();

@@ -19,7 +19,7 @@ void Square::setSquareColor(QColor color)
 	this->setPalette(p);
 }
 
-void Square::resetSquareColor()
+void Square::freeSquare()
 {
 	this->setSquareColor(m_defaultBackgroundColor);
 	m_occupied = false;

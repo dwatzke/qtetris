@@ -9,6 +9,8 @@
 #include <QShortcut>
 #include <QTimer>
 
+#include <QtAlgorithms>
+
 const int Board::ROWS = 20;
 const int Board::COLUMNS = 10;
 
@@ -78,8 +80,7 @@ void Board::initialize()
 	connect(new QShortcut(QKeySequence(Qt::Key_Right), this), SIGNAL(activated()), this, SLOT(moveRight()));
 	connect(new QShortcut(QKeySequence(Qt::Key_Down ), this), SIGNAL(activated()), this, SLOT(moveDown()));
 	connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(moveFall()));
-	connect(new QShortcut(QKeySequence(Qt::Key_A    ), this), SIGNAL(activated()), this, SLOT(rotateLeft()));
-	connect(new QShortcut(QKeySequence(Qt::Key_D    ), this), SIGNAL(activated()), this, SLOT(rotateRight()));
+	connect(new QShortcut(QKeySequence(Qt::Key_Up   ), this), SIGNAL(activated()), this, SLOT(rotate()));
 
 	/* TODO: connect moveLeft, moveRight, forceMoveDown and fallDown */
 	connect(m_timer, SIGNAL(timeout()), this, SLOT(timerMoveDown()));
@@ -127,28 +128,112 @@ void Board::moveBrick(BrickMoveDirection move)
 	BrickMoveResult moveType = this->checkAndMakeBrickMove(move);
 
 	/* handle game over */
-	if (moveType == GameOver) {
-		disconnect(m_timer, SIGNAL(timeout()), this, SLOT(timerMoveDown()));
-		int ret = QMessageBox::critical(this,
-			tr("Game over"), tr("Game over - bricks collided!"),
-			QMessageBox::Retry, QMessageBox::Close);
-		switch(ret) {
-			case QMessageBox::Retry:
-				emit gameReset();
-				break;
-			default:
-				/* noop */
-				break;
-		}
-	}
+	if (moveType == GameOver)
+		this->gameOver();
 
 	/* draw new brick state */
 	this->drawBrick();
+
+	/* TODO: should this be placed before or after drawBrick() ? */
+	if (moveType == Collision)
+		this->removeFilledRows();
 
 	/* if there was collision, send another brick */
 	if (moveType == Collision) {
 		qDebug() << "collision occured";
 		m_brickFalling = false;
+	}
+}
+
+void Board::removeFilledRows() {
+	qDebug() << "removing filled rows";
+
+	/** 'upper' and 'lower' have opposite meaning in graphical
+	 * and gridlayout-indexing point of view - I'm talking about
+	 * the graphical point of view
+	 * (i.e. lower squares have higher row indexes)
+	 */
+	const int upperBound = m_brickPos.y();
+	const int lowerBound = upperBound + m_brickInfo->height()-1;
+
+	QList<int> filledRowList;
+	QList<Square*> filledSquareList;
+	/* get list of filled rows (and their squares) */
+	for (int row = lowerBound; row >= upperBound; row--) {
+		bool filled = true;
+		for (int col = 0; col < Board::COLUMNS; col++) {
+			Square *sq = qobject_cast<Square*>(m_layout->itemAtPosition(row, col)->widget());
+			if (!sq->isOccupied()) {
+				filled = false;
+				break;
+			}
+		}
+
+		if (filled) {
+			qDebug() << "!! row" << row << "is filled";
+
+			for (int col = 0; col < Board::COLUMNS; col++) {
+				Square *sq = qobject_cast<Square*>(m_layout->itemAtPosition(row, col)->widget());
+				sq->freeSquare();
+				filledSquareList << sq;
+			}
+			filledRowList << row;
+		}
+	}
+
+	/* if there are no filled rows, then this is a no-op */
+	if (filledRowList.isEmpty())
+		return;
+
+	/* move non-filled rows down over filled rows */
+	int shift = 1;
+	for (int row = filledRowList.first()-1; row >= 0; row--) {
+		if (filledRowList.contains(row)) {
+			shift++;
+		} else {
+			this->moveRow(row, shift);
+		}
+	}
+
+	/* put 'overwritten' squares from filled-rows (that were already freed)
+	 * back into the board from the top */
+	int sqIndex = 0;
+	for (int row = 0; row < filledRowList.size(); row++) {
+		for(int col = 0; col < Board::COLUMNS; col++) {
+			m_layout->addWidget(filledSquareList[sqIndex], row, col);
+			sqIndex++;
+		}
+	}
+
+	Q_ASSERT(sqIndex == filledSquareList.size());
+}
+
+/** Moves row (graphically) down by 'shift' rows */
+void Board::moveRow(const int row, const int shift) {
+	qDebug() << "shifting row" << row << "by" << shift;
+	for(int col = 0; col < Board::COLUMNS; col++) {
+		QWidget *w = m_layout->itemAtPosition(row, col)->widget();
+		m_layout->addWidget(w, row+shift, col);
+	}
+}
+
+/** Stops the game.
+  * Stop the main timer(s), show info to player, offer Retry
+  */
+void Board::gameOver() {
+	disconnect(m_timer, SIGNAL(timeout()), this, SLOT(timerMoveDown()));
+
+	int ret = QMessageBox::critical(this,
+		tr("Game over"), tr("Game over - bricks collided!"),
+		QMessageBox::Retry, QMessageBox::Close);
+
+	switch(ret) {
+		case QMessageBox::Retry:
+			emit gameReset();
+			break;
+		default:
+			/* noop */
+			break;
 	}
 }
 
@@ -194,7 +279,7 @@ BrickMoveResult Board::checkAndMakeBrickMove(BrickMoveDirection move)
 			continue;
 
 		Square *sq = qobject_cast<Square*>(m_layout->itemAtPosition(row, col)->widget());
-		qDebug() << "occupy test for" << "row =" << row << ", col =" << col;
+		//qDebug() << "occupy test for" << "row =" << row << ", col =" << col;
 
 		/* if square is occupied */
 		if (sq->isOccupied()) {
@@ -233,18 +318,18 @@ void Board::drawBrick(bool draw)
 		if (item) {
 			Square *sq = qobject_cast<Square*>(item->widget());
 			if (draw) {
-				qDebug() << "occupying row =" << row << ", col =" << col;
+				//qDebug() << "occupying row =" << row << ", col =" << col;
 				sq->setSquareColor(color);
 			} else {
-				qDebug() << "freeing row =" << row << ", col =" << col;
-				sq->resetSquareColor();
+				//qDebug() << "freeing row =" << row << ", col =" << col;
+				sq->freeSquare();
 			}
 		}
 	}
 }
 
 /** Rotate currently falling brick. */
-void Board::rotate(bool right)
+void Board::rotate()
 {
 	const QList<QPoint>& oldList = m_brickInfo->pointList();
 	const QColor& color = m_brickInfo->brickColor();
@@ -260,8 +345,13 @@ void Board::rotate(bool right)
 			continue; /* skip collision with itself */
 		QPoint tmp = np + m_brickPos;
 		QLayoutItem *item = m_layout->itemAtPosition(tmp.y(), tmp.x());
+		if (!item) {
+			/* TODO: try moving the brick left or right */
+			qDebug() << "prevented rotation out of bounds";
+			return;
+		}
 		/* noop if collision would happen */
-		if (item != 0 && qobject_cast<Square*>(item->widget())->isOccupied()) {
+		if (item && qobject_cast<Square*>(item->widget())->isOccupied()) {
 			qDebug() << "prevented rotate collision";
 			return;
 		}
@@ -277,16 +367,6 @@ void Board::rotate(bool right)
 
 	/* draw rotated brick */
 	this->drawBrick();
-}
-
-void Board::rotateLeft()
-{
-	this->rotate(false);
-}
-
-void Board::rotateRight()
-{
-	this->rotate(true);
 }
 
 void Board::moveLeft()
