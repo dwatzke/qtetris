@@ -188,8 +188,6 @@ void Board::dropBrick()
  */
 BrickMoveResult Board::moveBrick(BrickMoveDirection move)
 {
-	//if (!m_brickFalling) return Noop;
-
 	/* undraw the previous brick state if any */
 	this->drawBrick(false);
 
@@ -243,7 +241,7 @@ void Board::removeFilledRows() {
 		}
 
 		if (filled) {
-			qDebug() << "!! row" << row << "is filled";
+			//qDebug() << "!! row" << row << "is filled";
 
 			for (int col = 0; col < Board::COLUMNS; col++) {
 				Square *sq = qobject_cast<Square*>(m_layout->itemAtPosition(row, col)->widget());
@@ -283,7 +281,7 @@ void Board::removeFilledRows() {
 
 /** Moves row (graphically) down by 'shift' rows */
 void Board::moveRow(const int row, const int shift) {
-	qDebug() << "shifting row" << row << "by" << shift;
+	//qDebug() << "shifting row" << row << "by" << shift;
 	for(int col = 0; col < Board::COLUMNS; col++) {
 		QWidget *w = m_layout->itemAtPosition(row, col)->widget();
 		m_layout->addWidget(w, row+shift, col);
