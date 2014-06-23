@@ -35,6 +35,7 @@ private:
 	Brick *m_brick;
 	QList<Brick*> m_brickList;
 	QPoint m_brickPos;
+	int m_lines;
 
 	void drawBrick(bool draw = true);
 	BrickMoveResult checkBrickMove(const QPoint position, const BrickMoveDirection move);
@@ -42,7 +43,7 @@ private:
 
 	void dropBrick();
 	BrickMoveResult moveBrick(BrickMoveDirection move);
-	void gameOver();
+	void gameOver(QString msg = QString());
 	void removeFilledRows();
 
 	void moveRow(const int row, const int shift);
@@ -59,6 +60,7 @@ private slots:
 
 signals:
 	void gameReset();
+	void lines(int);
 };
 
 #endif // BOARD_H

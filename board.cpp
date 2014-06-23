@@ -19,7 +19,8 @@ Board::Board(QWidget *parent) :
 	m_layout(new QGridLayout(this)),
 	m_timer(new QTimer(this)),
 	m_brick(0),
-	m_brickPos()
+	m_brickPos(),
+	m_lines(0)
 {
 	/* remove spaces between the widgets in the layout */
 	m_layout->setSpacing(0);
@@ -150,6 +151,8 @@ Board::Board(QWidget *parent) :
 	m_brickList << new Brick(pointLists, Qt::darkGreen, this);
 	pointLists.clear();
 
+	emit lines(0);
+
 	connect(new QShortcut(QKeySequence(Qt::Key_Left ), this), SIGNAL(activated()), this, SLOT(moveLeft()));
 	connect(new QShortcut(QKeySequence(Qt::Key_Right), this), SIGNAL(activated()), this, SLOT(moveRight()));
 	connect(new QShortcut(QKeySequence(Qt::Key_Down ), this), SIGNAL(activated()), this, SLOT(moveDown()));
@@ -276,6 +279,17 @@ void Board::removeFilledRows() {
 		}
 	}
 
+	m_lines += filledRowList.size();
+	emit lines(m_lines);
+
+	int newInterval = 500 - (m_lines / 10) * 50;
+
+	if (newInterval <= 50) {
+		this->gameOver();
+	}
+
+	m_timer->setInterval(newInterval);
+
 	Q_ASSERT(sqIndex == filledSquareList.size());
 }
 
@@ -291,14 +305,21 @@ void Board::moveRow(const int row, const int shift) {
 /** Stops the game.
   * Stop the main timer(s), show info to player, offer Retry
   */
-void Board::gameOver() {
+void Board::gameOver(QString msg) {
 	disconnect(m_timer, SIGNAL(timeout()), this, SLOT(timerMoveDown()));
 
-	int ret = QMessageBox::critical(this,
-		tr("Game over"), tr("Game over - bricks collided!"),
-		QMessageBox::Retry, QMessageBox::Close);
+	int ret;
+	if (msg.isEmpty()) {
+		ret = QMessageBox::critical(this,
+			tr("Game over"), tr("Game over - bricks collided!"),
+			QMessageBox::Retry, QMessageBox::Close);
+	} else {
+		ret = QMessageBox::information(this,
+			tr("Game over"), tr("Game over - you have won at tetris! Congratulations, Chuck Norris."),
+			QMessageBox::Retry, QMessageBox::Close);
+	}
 
-	switch(ret) {
+	switch (ret) {
 		case QMessageBox::Retry:
 			emit gameReset();
 			break;

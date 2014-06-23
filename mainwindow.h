@@ -4,6 +4,7 @@
 #include <QMainWindow>
 
 class Board;
+class QLCDNumber;
 
 class MainWindow : public QMainWindow
 {
@@ -13,12 +14,14 @@ public:
 	MainWindow(QWidget *parent = 0);
 
 private:
-	Board* m_board;
+	Board *m_board;
+	QLCDNumber *m_lineLCD;
 
 	void initialize();
 
 public slots:
 	void resetBoard();
+	void setLines(int number);
 };
 
 #endif // MAINWINDOW_H
