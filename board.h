@@ -37,16 +37,19 @@ private:
 	QPoint m_brickPos;
 	int m_lines;
 
+	QList<Brick*> m_brickBag;
+
 	void drawBrick(bool draw = true);
 	BrickMoveResult checkBrickMove(const QPoint position, const BrickMoveDirection move);
 	BrickMoveResult checkAndMakeBrickMove(BrickMoveDirection move);
 
 	void dropBrick();
 	BrickMoveResult moveBrick(BrickMoveDirection move);
-	void gameOver(QString msg = QString());
+	void gameOver(bool fail = true);
 	void removeFilledRows();
 
 	void moveRow(const int row, const int shift);
+	void fillBrickBag();
 
 private slots:
 	void timerMoveDown();

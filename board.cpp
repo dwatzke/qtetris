@@ -7,6 +7,7 @@
 #include <QLayoutItem>
 #include <QMessageBox>
 #include <QShortcut>
+#include <QTime>
 #include <QTimer>
 
 #include <QtAlgorithms>
@@ -19,7 +20,6 @@ Board::Board(QWidget *parent) :
 	m_layout(new QGridLayout(this)),
 	m_timer(new QTimer(this)),
 	m_brick(0),
-	m_brickPos(),
 	m_lines(0)
 {
 	/* remove spaces between the widgets in the layout */
@@ -78,7 +78,7 @@ Board::Board(QWidget *parent) :
 	       << QPoint(0,3);
 	pointLists << points;
 	points.clear();
-	m_brickList << new Brick(pointLists, Qt::cyan, this);
+	m_brickList << new Brick(pointLists, QColor(0, 195, 255), this);
 	pointLists.clear();
 
 	/* :.. */
@@ -181,13 +181,28 @@ void Board::timerMoveDown()
 void Board::dropBrick()
 {
 	m_timer->start();
-	m_brick = m_brickList.at(qrand() % m_brickList.size());
+	if (m_brickBag.isEmpty())
+		this->fillBrickBag();
+	m_brick = m_brickBag.takeAt(qrand() % m_brickBag.size());
 	m_brickPos = QPoint((Board::COLUMNS / 2) - (m_brick->width() / 2), 0 - m_brick->height());
+}
+
+void Board::fillBrickBag()
+{
+	//qDebug() << "(re)filling the brick bag";
+
+	qsrand((uint)QTime::currentTime().msecsTo(QTime(0,0)));
+
+	Brick *brick;
+	while (m_brickBag.size() != m_brickList.size()) {
+		brick = m_brickList.at(qrand() % m_brickList.size());
+		if (!m_brickBag.contains(brick))
+			m_brickBag << brick;
+	}
 }
 
 /** Moves the currently falling brick.
  * Assumes that there actually is a falling brick.
- * Sets m_brickFalling = false if the brick just got stuck
  */
 BrickMoveResult Board::moveBrick(BrickMoveDirection move)
 {
@@ -285,7 +300,7 @@ void Board::removeFilledRows() {
 	int newInterval = 500 - (m_lines / 10) * 50;
 
 	if (newInterval <= 50) {
-		this->gameOver();
+		this->gameOver(false);
 	}
 
 	m_timer->setInterval(newInterval);
@@ -305,17 +320,17 @@ void Board::moveRow(const int row, const int shift) {
 /** Stops the game.
   * Stop the main timer(s), show info to player, offer Retry
   */
-void Board::gameOver(QString msg) {
+void Board::gameOver(bool fail) {
 	disconnect(m_timer, SIGNAL(timeout()), this, SLOT(timerMoveDown()));
 
 	int ret;
-	if (msg.isEmpty()) {
+	if (fail) {
 		ret = QMessageBox::critical(this,
 			tr("Game over"), tr("Game over - bricks collided!"),
 			QMessageBox::Retry, QMessageBox::Close);
 	} else {
 		ret = QMessageBox::information(this,
-			tr("Game over"), tr("Game over - you have won at tetris! Congratulations, Chuck Norris."),
+			tr("Game over"), tr("Hmm, you have won at tetris! Congratulations, Chuck Norris."),
 			QMessageBox::Retry, QMessageBox::Close);
 	}
 
