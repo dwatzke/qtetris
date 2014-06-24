@@ -29,6 +29,7 @@ public:
 
 	static const int ROWS;
 	static const int COLUMNS;
+	static const int START_INTERVAL;
 
 	void startGame();
 
@@ -43,26 +44,30 @@ private:
 
 	QList<Brick*> m_brickBag;
 
-	void drawBrick(bool draw = true);
-	BrickMoveResult checkBrickMove(QPoint position, const BrickMoveDirection move);
-	BrickMoveResult checkAndMakeBrickMove(BrickMoveDirection move);
+	void initializeBrickList();
 
 	void dropBrick();
 	BrickMoveResult moveBrick(BrickMoveDirection move);
-	void gameOver(bool fail = true);
-	void removeFilledRows();
-
-	void moveRow(const int row, const int shift);
+	BrickMoveResult checkBrickMove(QPoint position, const BrickMoveDirection move);
+	BrickMoveResult checkAndMakeBrickMove(BrickMoveDirection move);
 	void fillBrickBag();
 	void prepareNextBrick();
+
+	void removeFilledRows();
+	void moveRow(const int row, const int shift);
+
+	void drawBrick(bool draw = true);
+
+	void gameOver(bool fail = true);
 
 private slots:
 	void moveLeft();
 	void moveRight();
 	void moveDown();
 	void moveFall();
-
 	void rotateBrick();
+
+	void adjustMoveDownInterval(int lines);
 
 signals:
 	void gameReset();

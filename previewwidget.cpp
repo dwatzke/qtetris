@@ -27,7 +27,7 @@ void PreviewWidget::drawBrick(Brick *brick)
 
 	for (int pos = 0; pos < 8; pos++) {
 		Square * sq = qobject_cast<Square*>(m_layout->itemAt(pos)->widget());
-		sq->freeSquare();
+		sq->resetSquareColor();
 	}
 
 	if (brick->height() > 2)
@@ -37,10 +37,11 @@ void PreviewWidget::drawBrick(Brick *brick)
 	const QColor& color = brick->brickColor();
 
 	foreach (QPoint p, pointList) {
-		int col = p.x();
+		/* the '!!' thing aligns the O brick preview */
+		int col = p.x() + !!(brick->width() == 2);
 		int row = p.y();
 
 		Square *sq = qobject_cast<Square*>(m_layout->itemAtPosition(row,col)->widget());
-		sq->setSquareColor(color);
+		sq->resetSquareColor(color);
 	}
 }

@@ -10,19 +10,13 @@ Square::Square(QWidget *parent) :
 	this->setDown(true);
 }
 
-void Square::setSquareColor(QColor color)
+void Square::resetSquareColor(QColor color)
 {
-	m_occupied = true;
+	m_occupied = color.isValid();
 
 	QPalette p = this->palette();
-	p.setColor(QPalette::Button, color);
+	p.setColor(QPalette::Button, color.isValid() ? color : m_defaultBackgroundColor);
 	this->setPalette(p);
-}
-
-void Square::freeSquare()
-{
-	this->setSquareColor(m_defaultBackgroundColor);
-	m_occupied = false;
 }
 
 bool Square::isOccupied() const

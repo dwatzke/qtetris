@@ -2,6 +2,7 @@
 #define SQUARE_H
 
 #include <QPushButton>
+#include <QColor>
 
 class Square : public QPushButton
 {
@@ -9,8 +10,7 @@ class Square : public QPushButton
 public:
 	explicit Square(QWidget *parent = 0);
 
-	void setSquareColor(QColor color);
-	void freeSquare();
+	void resetSquareColor(QColor color = QColor());
 
 	bool isOccupied() const;
 
