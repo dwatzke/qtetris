@@ -54,6 +54,8 @@ void MainWindow::resetBoard()
 		oldBoard->deleteLater();
 
 	m_lineLCD->display(0);
+
+	m_board->startGame();
 }
 
 void MainWindow::setLines(int number)

@@ -23,6 +23,8 @@ PreviewWidget::PreviewWidget(QWidget *parent) :
 
 void PreviewWidget::drawBrick(Brick *brick)
 {
+	//qDebug() << "drawing preview of the next brick";
+
 	for (int pos = 0; pos < 8; pos++) {
 		Square * sq = qobject_cast<Square*>(m_layout->itemAt(pos)->widget());
 		sq->freeSquare();

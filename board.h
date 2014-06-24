@@ -29,6 +29,8 @@ public:
 	static const int ROWS;
 	static const int COLUMNS;
 
+	void startGame();
+
 private:
 	QGridLayout *m_layout;
 	QTimer *m_timer;
