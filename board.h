@@ -10,7 +10,8 @@ class Brick;
 enum BrickMoveDirection {
 	Down = 0,
 	Left = 1,
-	Right = 2
+	Right = 2,
+	Rotate = 3
 };
 
 enum BrickMoveResult {
@@ -43,7 +44,7 @@ private:
 	QList<Brick*> m_brickBag;
 
 	void drawBrick(bool draw = true);
-	BrickMoveResult checkBrickMove(const QPoint position, const BrickMoveDirection move);
+	BrickMoveResult checkBrickMove(QPoint position, const BrickMoveDirection move);
 	BrickMoveResult checkAndMakeBrickMove(BrickMoveDirection move);
 
 	void dropBrick();
@@ -61,7 +62,7 @@ private slots:
 	void moveDown();
 	void moveFall();
 
-	void rotate();
+	void rotateBrick();
 
 signals:
 	void gameReset();

@@ -155,7 +155,7 @@ Board::Board(QWidget *parent) :
 	connect(new QShortcut(QKeySequence(Qt::Key_Right), this), SIGNAL(activated()), SLOT(moveRight()));
 	connect(new QShortcut(QKeySequence(Qt::Key_Down ), this), SIGNAL(activated()), SLOT(moveDown()));
 	connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), SLOT(moveFall()));
-	connect(new QShortcut(QKeySequence(Qt::Key_Up   ), this), SIGNAL(activated()), SLOT(rotate()));
+	connect(new QShortcut(QKeySequence(Qt::Key_Up   ), this), SIGNAL(activated()), SLOT(rotateBrick()));
 
 	connect(m_timer, SIGNAL(timeout()), SLOT(moveDown()));
 
@@ -180,12 +180,20 @@ void Board::dropBrick()
 	this->prepareNextBrick();
 }
 
+/** Starts the game.
+ * Runs the timer and drops a brick.
+ * Avoids doing that in the constructor so that objects have a chance to connect
+ *  the board signals to their slots before the game starts.
+ */
 void Board::startGame()
 {
 	this->prepareNextBrick();
 	this->dropBrick();
 }
 
+/** Prepares the next brick.
+ * Sends a signal with pointer to the next Brick
+ */
 void Board::prepareNextBrick()
 {
 	if (m_brickBag.isEmpty())
@@ -197,6 +205,9 @@ void Board::prepareNextBrick()
 	emit nextBrick(m_brickNext);
 }
 
+/** Fills the brick bag with one of each shapes in random order.
+ * The bricks are then randomly drawn from it.
+ */
 void Board::fillBrickBag()
 {
 	//qDebug() << "(re)filling the brick bag";
@@ -240,6 +251,9 @@ BrickMoveResult Board::moveBrick(BrickMoveDirection move)
 	return res;
 }
 
+/** Removes the filled rows ("lines") keeping the board in the consistent state
+ *  by reseting and reusing the removed squares.
+ */
 void Board::removeFilledRows() {
 	//qDebug() << "removing filled rows";
 
@@ -321,49 +335,15 @@ void Board::removeFilledRows() {
 	Q_ASSERT(sqIndex == filledSquareList.size());
 }
 
-/** Moves row (graphically) down by 'shift' rows */
-void Board::moveRow(const int row, const int shift) {
-	//qDebug() << "shifting row" << row << "by" << shift;
-	for(int col = 0; col < Board::COLUMNS; col++) {
-		QWidget *w = m_layout->itemAtPosition(row, col)->widget();
-		m_layout->addWidget(w, row+shift, col);
-	}
-}
-
-/** Stops the game.
-  * Stop the main timer(s), show info to player, offer Retry
-  */
-void Board::gameOver(bool fail) {
-	//disconnect(m_timer, SIGNAL(timeout()), this, SLOT(moveDown()));
-	m_timer->disconnect(SIGNAL(timeout()));
-
-	int ret;
-	if (fail) {
-		ret = QMessageBox::critical(this,
-			tr("Game over"), tr("Game over - bricks collided!"),
-			QMessageBox::Retry, QMessageBox::Close);
-	} else {
-		ret = QMessageBox::information(this,
-			tr("Game over"), tr("Hmm, you have won at tetris! Congratulations, Chuck Norris."),
-			QMessageBox::Retry, QMessageBox::Close);
-	}
-
-	switch (ret) {
-		case QMessageBox::Retry:
-			emit gameReset();
-			break;
-		default:
-			/* noop */
-			break;
-	}
-}
-
+/** Checks if the brick move from the given position causes collision.
+ * If it does, it classifies what type of collision occurred.
+ */
 BrickMoveResult Board::checkBrickMove(const QPoint position, const BrickMoveDirection move)
 {
 	/* horizontal board bounds */
 	if (position.x() < 0 || position.x() > (Board::COLUMNS - m_brick->width())) {
 		/* if we hit horizontal bounds while moving down, then that's a bug! */
-		Q_ASSERT(move == Left || move == Right);
+		Q_ASSERT(move != Down);
 		return Noop;
 	}
 
@@ -409,15 +389,16 @@ BrickMoveResult Board::checkAndMakeBrickMove(BrickMoveDirection move)
 	/* prepare position change based on direction of movement */
 	QPoint change;
 	switch (move) {
-	case Left:
-		change = QPoint(-1, 0);
-		break;
-	case Right:
-		change = QPoint(1, 0);
-		break;
-	case Down:
-		change = QPoint(0, 1);
-		break;
+		case Left:
+			change = QPoint(-1, 0);
+			break;
+		case Right:
+			change = QPoint(1, 0);
+			break;
+		case Down:
+			change = QPoint(0, 1);
+			break;
+		default: {}
 	}
 
 	BrickMoveResult res = this->checkBrickMove(m_brickPos + change, move);
@@ -457,7 +438,7 @@ void Board::drawBrick(bool draw)
 }
 
 /** Rotate currently falling brick. */
-void Board::rotate()
+void Board::rotateBrick()
 {
 	/* undraw original brick */
 	this->drawBrick(false);
@@ -466,8 +447,23 @@ void Board::rotate()
 	m_brick->rotate();
 
 	/* check rotate collision */
-	if (this->checkBrickMove(m_brickPos, Right) != Ok)
+	BrickMoveResult res = this->checkBrickMove(m_brickPos, Rotate);
+
+	/* if the brick would hit the horizontal bounds, check if that could be solved
+	 * by bouncing it off the edge */
+	if (res == Noop && m_brickPos.x() > (Board::COLUMNS - m_brick->width())) {
+		QPoint adjustedPos = QPoint(Board::COLUMNS - m_brick->width(), m_brickPos.y());
+
+		res = this->checkBrickMove(adjustedPos, Rotate);
+		/* if it worked, apply the adjusted position */
+		if (res == Ok)
+			m_brickPos = adjustedPos;
+	}
+
+	if (res != Ok)
 		m_brick->unrotate();
+
+	/* TODO: check if the collision can be solved by shifting the position to the left or to the right */
 
 	/* draw rotated brick */
 	this->drawBrick();
@@ -491,4 +487,43 @@ void Board::moveDown()
 void Board::moveFall()
 {
 	while (this->moveBrick(Down) == Ok) {};
+}
+
+/** Stops the game.
+  * Stop the main timer(s), show info to player, offer Retry
+  */
+void Board::gameOver(bool fail) {
+	//disconnect(m_timer, SIGNAL(timeout()), this, SLOT(moveDown()));
+	m_timer->disconnect(SIGNAL(timeout()));
+
+	int ret;
+	if (fail) {
+		ret = QMessageBox::critical(this,
+			tr("Game over"), tr("Game over - bricks collided!"),
+			QMessageBox::Retry, QMessageBox::Close);
+	} else {
+		ret = QMessageBox::information(this,
+			tr("Game over"), tr("Hmm, you have won at tetris! Congratulations, Chuck Norris."),
+			QMessageBox::Retry, QMessageBox::Close);
+	}
+
+	switch (ret) {
+		case QMessageBox::Retry:
+			emit gameReset();
+			break;
+		default:
+			/* noop */
+			break;
+	}
+}
+
+/** Moves row (graphically) down by 'shift' rows.
+ * It overwrites the destination rows' squares and keeps the original squares in place.
+ */
+void Board::moveRow(const int row, const int shift) {
+	//qDebug() << "shifting row" << row << "by" << shift;
+	for(int col = 0; col < Board::COLUMNS; col++) {
+		QWidget *w = m_layout->itemAtPosition(row, col)->widget();
+		m_layout->addWidget(w, row+shift, col);
+	}
 }
