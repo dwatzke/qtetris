@@ -33,6 +33,7 @@ private:
 	QGridLayout *m_layout;
 	QTimer *m_timer;
 	Brick *m_brick;
+	Brick *m_brickNext;
 	QList<Brick*> m_brickList;
 	QPoint m_brickPos;
 	int m_lines;
@@ -50,10 +51,9 @@ private:
 
 	void moveRow(const int row, const int shift);
 	void fillBrickBag();
+	void prepareNextBrick();
 
 private slots:
-	void timerMoveDown();
-
 	void moveLeft();
 	void moveRight();
 	void moveDown();
@@ -64,6 +64,7 @@ private slots:
 signals:
 	void gameReset();
 	void lines(int);
+	void nextBrick(Brick*);
 };
 
 #endif // BOARD_H

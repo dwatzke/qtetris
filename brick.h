@@ -19,6 +19,7 @@ public:
 
 	void rotate();
 	void unrotate();
+	void resetRotation();
 
 private:
 	QList<QList<QPoint> > m_pointLists;

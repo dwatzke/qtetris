@@ -16,9 +16,11 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     board.cpp \
     square.cpp \
-    brick.cpp
+    brick.cpp \
+    previewwidget.cpp
 
 HEADERS  += mainwindow.h \
     board.h \
     square.h \
-    brick.h
+    brick.h \
+    previewwidget.h

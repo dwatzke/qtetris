@@ -23,8 +23,6 @@ PreviewWidget::PreviewWidget(QWidget *parent) :
 
 void PreviewWidget::drawBrick(Brick *brick)
 {
-	qDebug() << "drawing the next brick preview";
-
 	for (int pos = 0; pos < 8; pos++) {
 		Square * sq = qobject_cast<Square*>(m_layout->itemAt(pos)->widget());
 		sq->freeSquare();
@@ -40,7 +38,6 @@ void PreviewWidget::drawBrick(Brick *brick)
 		int col = p.x();
 		int row = p.y();
 
-		qDebug() << "coloring (" << row << "," << col << ")" << color;
 		Square *sq = qobject_cast<Square*>(m_layout->itemAtPosition(row,col)->widget());
 		sq->setSquareColor(color);
 	}

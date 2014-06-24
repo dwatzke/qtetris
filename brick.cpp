@@ -1,10 +1,12 @@
 #include "brick.h"
 
+#include <QDebug>
+
 Brick::Brick(QList<QList<QPoint> > pointLists, const QColor color, QObject *parent) :
+	QObject(parent),
 	m_pointLists(pointLists),
 	m_brickColor(color),
-	m_rotateIndex(0),
-	QObject(parent)
+	m_rotateIndex(0)
 {
 	/* calculate the brick height and width */
 	foreach(QList<QPoint> pointList, pointLists) {
@@ -38,6 +40,11 @@ void Brick::unrotate()
 {
 	if (--m_rotateIndex < 0)
 		m_rotateIndex += m_pointLists.size();
+}
+
+void Brick::resetRotation()
+{
+	m_rotateIndex = 0;
 }
 
 int Brick::width() const

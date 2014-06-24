@@ -19,7 +19,7 @@ Board::Board(QWidget *parent) :
 	QWidget(parent),
 	m_layout(new QGridLayout(this)),
 	m_timer(new QTimer(this)),
-	m_brick(0),
+	m_brick(0), m_brickNext(0),
 	m_lines(0)
 {
 	/* remove spaces between the widgets in the layout */
@@ -38,7 +38,7 @@ Board::Board(QWidget *parent) :
 	QList<QList<QPoint> > pointLists;
 	QList<QPoint> points;
 
-	/* :: */
+	/* O */
 	points << QPoint(0,0) << QPoint(0,1)
 	       << QPoint(1,0) << QPoint(1,1);
 	pointLists << points;
@@ -46,7 +46,7 @@ Board::Board(QWidget *parent) :
 	m_brickList << new Brick(pointLists, Qt::green, this);
 	pointLists.clear();
 
-	/* .:. */
+	/* T */
 	points <<                QPoint(1,0)
 	       << QPoint(0,1) << QPoint(1,1) << QPoint(2,1);
 	pointLists << points;
@@ -68,20 +68,20 @@ Board::Board(QWidget *parent) :
 	m_brickList << new Brick(pointLists, Qt::red, this);
 	pointLists.clear();
 
-	/* .... */
-	points << QPoint(0,0) << QPoint(1,0) << QPoint(2,0) << QPoint(3,0);
-	pointLists << points;
-	points.clear();
+	/* I */
 	points << QPoint(0,0)
 	       << QPoint(0,1)
 	       << QPoint(0,2)
 	       << QPoint(0,3);
 	pointLists << points;
 	points.clear();
+	points << QPoint(0,0) << QPoint(1,0) << QPoint(2,0) << QPoint(3,0);
+	pointLists << points;
+	points.clear();
 	m_brickList << new Brick(pointLists, QColor(0, 195, 255), this);
 	pointLists.clear();
 
-	/* :.. */
+	/* J */
 	points << QPoint(0,0)
 	       << QPoint(0,1) << QPoint(1,1) << QPoint(2,1);
 	pointLists << points;
@@ -103,7 +103,7 @@ Board::Board(QWidget *parent) :
 	m_brickList << new Brick(pointLists, Qt::blue, this);
 	pointLists.clear();
 
-	/* ..: */
+	/* L */
 	points << QPoint(0,0) << QPoint(1,0) << QPoint(2,0)
 	       << QPoint(0,1);
 	pointLists << points;
@@ -125,7 +125,7 @@ Board::Board(QWidget *parent) :
 	m_brickList << new Brick(pointLists, Qt::darkCyan, this);
 	pointLists.clear();
 
-	/* ':. */
+	/* Z */
 	points << QPoint(0,0) << QPoint(1,0)
 			      << QPoint(1,1) << QPoint(2,1);
 	pointLists << points;
@@ -138,7 +138,7 @@ Board::Board(QWidget *parent) :
 	m_brickList << new Brick(pointLists, Qt::magenta, this);
 	pointLists.clear();
 
-	/* .:' */
+	/* S */
 	points                << QPoint(1,0) << QPoint(2,0)
 	       << QPoint(0,1) << QPoint(1,1);
 	pointLists << points;
@@ -153,26 +153,20 @@ Board::Board(QWidget *parent) :
 
 	emit lines(0);
 
-	connect(new QShortcut(QKeySequence(Qt::Key_Left ), this), SIGNAL(activated()), this, SLOT(moveLeft()));
-	connect(new QShortcut(QKeySequence(Qt::Key_Right), this), SIGNAL(activated()), this, SLOT(moveRight()));
-	connect(new QShortcut(QKeySequence(Qt::Key_Down ), this), SIGNAL(activated()), this, SLOT(moveDown()));
-	connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), this, SLOT(moveFall()));
-	connect(new QShortcut(QKeySequence(Qt::Key_Up   ), this), SIGNAL(activated()), this, SLOT(rotate()));
+	connect(new QShortcut(QKeySequence(Qt::Key_Left ), this), SIGNAL(activated()), SLOT(moveLeft()));
+	connect(new QShortcut(QKeySequence(Qt::Key_Right), this), SIGNAL(activated()), SLOT(moveRight()));
+	connect(new QShortcut(QKeySequence(Qt::Key_Down ), this), SIGNAL(activated()), SLOT(moveDown()));
+	connect(new QShortcut(QKeySequence(Qt::Key_Space), this), SIGNAL(activated()), SLOT(moveFall()));
+	connect(new QShortcut(QKeySequence(Qt::Key_Up   ), this), SIGNAL(activated()), SLOT(rotate()));
 
-	connect(m_timer, SIGNAL(timeout()), this, SLOT(timerMoveDown()));
+	connect(m_timer, SIGNAL(timeout()), SLOT(moveDown()));
+
+	this->prepareNextBrick();
+
 	/* the first brick would fall automatically but the rotate
 	 * would crash the game if pressed before the first timer timeout occured */
-	this->dropBrick();
 	m_timer->setInterval(400);
-	m_timer->start();
-}
-
-/** Carries out the automatic move down.
- * Either drops a new brick or it moves down the currently falling one.
- */
-void Board::timerMoveDown()
-{
-	this->moveBrick(Down);
+	this->dropBrick();
 }
 
 /** Drops a new brick.
@@ -181,24 +175,39 @@ void Board::timerMoveDown()
 void Board::dropBrick()
 {
 	m_timer->start();
+
+	m_brick = m_brickNext;
+	m_brick->resetRotation();
+	m_brickPos = QPoint((Board::COLUMNS / 2) - (m_brick->width() / 2), 0 - m_brick->height());
+
+	this->prepareNextBrick();
+}
+
+void Board::prepareNextBrick()
+{
 	if (m_brickBag.isEmpty())
 		this->fillBrickBag();
-	m_brick = m_brickBag.takeAt(qrand() % m_brickBag.size());
-	m_brickPos = QPoint((Board::COLUMNS / 2) - (m_brick->width() / 2), 0 - m_brick->height());
+
+	m_brickNext = m_brickBag.takeAt(qrand() % m_brickBag.size());
+
+	emit nextBrick(m_brickNext);
 }
 
 void Board::fillBrickBag()
 {
 	//qDebug() << "(re)filling the brick bag";
 
+	/* provide seed to srand() */
 	qsrand((uint)QTime::currentTime().msecsTo(QTime(0,0)));
 
-	Brick *brick;
+	/* fill the brick bag with one of each brick-type in random order */
 	while (m_brickBag.size() != m_brickList.size()) {
-		brick = m_brickList.at(qrand() % m_brickList.size());
+		Brick *brick = m_brickList.at(qrand() % m_brickList.size());
 		if (!m_brickBag.contains(brick))
 			m_brickBag << brick;
 	}
+
+	m_brickBag << m_brickList.at(qrand() % m_brickList.size());
 }
 
 /** Moves the currently falling brick.
@@ -321,7 +330,8 @@ void Board::moveRow(const int row, const int shift) {
   * Stop the main timer(s), show info to player, offer Retry
   */
 void Board::gameOver(bool fail) {
-	disconnect(m_timer, SIGNAL(timeout()), this, SLOT(timerMoveDown()));
+	//disconnect(m_timer, SIGNAL(timeout()), this, SLOT(moveDown()));
+	m_timer->disconnect(SIGNAL(timeout()));
 
 	int ret;
 	if (fail) {

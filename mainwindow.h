@@ -3,6 +3,9 @@
 
 #include <QMainWindow>
 
+#include "brick.h"
+#include "previewwidget.h"
+
 class Board;
 class QLCDNumber;
 
@@ -16,12 +19,14 @@ public:
 private:
 	Board *m_board;
 	QLCDNumber *m_lineLCD;
+	PreviewWidget *m_previewWidget;
 
 	void initialize();
 
 public slots:
 	void resetBoard();
 	void setLines(int number);
+	void previewNextBrick(Brick *brick);
 };
 
 #endif // MAINWINDOW_H

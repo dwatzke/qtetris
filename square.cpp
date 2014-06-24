@@ -15,7 +15,7 @@ void Square::setSquareColor(QColor color)
 	m_occupied = true;
 
 	QPalette p = this->palette();
-	p.setColor(this->backgroundRole(), color);
+	p.setColor(QPalette::Button, color);
 	this->setPalette(p);
 }
 
