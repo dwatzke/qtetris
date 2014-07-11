@@ -15,12 +15,14 @@
 const int Board::ROWS = 20;
 const int Board::COLUMNS = 10;
 const int Board::START_INTERVAL = 500;
+const QColor Board::SHADOW_COLOR = Qt::gray;
 
 Board::Board(QWidget *parent) :
 	QWidget(parent),
 	m_layout(new QGridLayout(this)),
 	m_timer(new QTimer(this)),
 	m_brick(0), m_brickNext(0),
+	m_skipShadow(false),
 	m_lines(0)
 {
 	/* remove spaces between the widgets in the layout */
@@ -30,7 +32,7 @@ Board::Board(QWidget *parent) :
 	/* add some buttons into the layout */
 	for (int row = 0; row < ROWS; row++) {
 		for(int col = 0; col < COLUMNS; col++) {
-			Square * sq = new Square(this);
+			Square *sq = new Square(this);
 			m_layout->addWidget(sq, row, col);
 		}
 	}
@@ -76,7 +78,7 @@ void Board::prepareNextBrick()
 	emit nextBrick(m_brickNext);
 }
 
-/** Drops a new brick.
+/** Drops a new brick & draws its shadow.
  * Assumes that all other bricks are stuck down.
  */
 void Board::dropBrick()
@@ -86,8 +88,10 @@ void Board::dropBrick()
 	m_brick = m_brickNext;
 	m_brick->resetRotation();
 	m_brickPos = QPoint((COLUMNS / 2) - (m_brick->width() / 2), 0 - m_brick->height());
+	this->setBrickShadow(true);
 
 	this->prepareNextBrick();
+	this->drawBrickShadow();
 }
 
 /** Moves the currently falling brick.
@@ -98,14 +102,25 @@ BrickMoveResult Board::moveBrick(BrickMoveDirection move)
 	/* undraw the previous brick state if any */
 	this->drawBrick(false);
 
+	///* remove the shadow if brick wasn't moving down */
+	this->drawBrickShadow(false);
+	/* re-enable the shadow on left/right movement */
+	if (move != Down) {
+		qDebug() << "Left/Right movement";
+		this->setBrickShadow(true);
+	}
+
 	/* determine if the move causes collision and proceed with it if not */
 	BrickMoveResult res = this->checkAndMakeBrickMove(move);
 
 	/* handle the game over */
-	if (res == GameOver)
+	if (res == GameOver) {
 		this->gameOver();
+		return GameOver;
+	}
 
 	/* draw the new brick state */
+	this->drawBrickShadow();
 	this->drawBrick();
 
 	if (res == Collision) {
@@ -120,6 +135,7 @@ BrickMoveResult Board::moveBrick(BrickMoveDirection move)
 /** Checks if the brick move from the given position causes collision.
  * If it does, it classifies what type of collision occurred.
  */
+// TODO:
 BrickMoveResult Board::checkBrickMove(const QPoint position, const BrickMoveDirection move)
 {
 	/* horizontal board bounds */
@@ -198,7 +214,11 @@ BrickMoveResult Board::checkAndMakeBrickMove(BrickMoveDirection move)
 void Board::rotateBrick()
 {
 	/* undraw the original brick */
+	qDebug() << "rotate: undraw brick";
 	this->drawBrick(false);
+	qDebug() << "rotate: undraw shadow";
+	this->drawBrickShadow(false);
+	qDebug() << "rotate: undraw both done";
 
 	/* rotate the brick */
 	m_brick->rotate();
@@ -221,23 +241,29 @@ void Board::rotateBrick()
 		m_brick->unrotate();
 
 	/* draw the rotated brick */
+	qDebug() << "rotate: draw brick";
 	this->drawBrick();
+	qDebug() << "rotate: draw shadow";
+	this->drawBrickShadow();
+	qDebug() << "rotate done";
 }
 
-/** Draws (or undraws if draw=false) current brick on m_brickPos.
-  */
-void Board::drawBrick(bool draw)
+/** Draws (or undraws if draw=false) any brick on any position with any color */
+void Board::drawBrickImpl(Brick *brick, const QPoint &brickPos, const bool draw, const bool shadow)
 {
-	const QList<QPoint> &pointList = m_brick->pointList();
+	const QList<QPoint> &pointList = brick->pointList();
 	QColor color;
 
-	/* if we want to draw it, set a color, else leave the color invalid */
-	if (draw)
-		color = m_brick->brickColor();
+	if (draw) {
+		if (!shadow)
+			color = brick->brickColor();
+		else
+			color = SHADOW_COLOR;
+	}
 
 	foreach (QPoint p, pointList) {
-		int col = p.x() + m_brickPos.x();
-		int row = p.y() + m_brickPos.y();
+		int col = p.x() + brickPos.x();
+		int row = p.y() + brickPos.y();
 
 		QLayoutItem *item = m_layout->itemAtPosition(row, col);
 		if (item) {
@@ -245,6 +271,70 @@ void Board::drawBrick(bool draw)
 			sq->resetSquareColor(color);
 		}
 	}
+}
+
+/** Draws (or undraws if draw=false) current brick on m_brickPos.
+  */
+void Board::drawBrick(bool draw)
+{
+	this->drawBrickImpl(m_brick, m_brickPos, draw);
+
+//	const QList<QPoint> &pointList = m_brick->pointList();
+//	QColor color;
+
+//	/* if we want to draw it, set a color, else leave the color invalid */
+//	if (draw)
+//		color = m_brick->brickColor();
+
+//	foreach (QPoint p, pointList) {
+//		int col = p.x() + m_brickPos.x();
+//		int row = p.y() + m_brickPos.y();
+
+//		QLayoutItem *item = m_layout->itemAtPosition(row, col);
+//		if (item) {
+//			Square *sq = qobject_cast<Square*>(item->widget());
+//			sq->resetSquareColor(color);
+//		}
+//	}
+}
+
+/** Draws a brick shadow or just returns false if there's no room for it */
+void Board::drawBrickShadow(bool draw)
+{
+	if (draw && m_skipShadow)
+		return;
+
+	if (draw) {
+		bool skip = true;
+		//m_brickShadowPos = QPoint(m_brickPos.x(), m_brickPos.y() + m_brick->height());
+		//m_brickShadowPos = QPoint(m_brickPos.x(), m_brickPos.y() + 1);
+		m_brickShadowPos = QPoint(m_brickPos.x(), m_brickPos.y());
+		while (this->checkBrickMove(m_brickShadowPos + QPoint(0, 1), Down) == Ok
+		       && m_brickShadowPos.y() < ROWS - m_brick->height())
+		{
+			skip = false;
+			m_brickShadowPos += QPoint(0, 1);
+		}
+		if (skip) {
+			this->setBrickShadow(false);
+			//m_brickShadowPos = QPoint(0, 0);
+		}
+	}
+
+	if (m_skipShadow)
+		return;
+
+	//if (m_brickShadowPos.isNull())
+	//	return;
+
+	//qDebug() << "about to draw shadow at pos" << m_brickShadowPos;
+	this->drawBrickImpl(m_brick, m_brickShadowPos, draw, true);
+}
+
+void Board::setBrickShadow(const bool enabled)
+{
+	m_skipShadow = !enabled;
+	qDebug() << "draw shadow:" << enabled;
 }
 
 /** Removes the filled rows ("lines") keeping the board in the consistent state
@@ -330,6 +420,7 @@ void Board::adjustMoveDownInterval(int lines)
 
 	if (newInterval <= 20) {
 		this->gameOver(false);
+		return;
 	}
 
 	m_timer->setInterval(newInterval);

@@ -1,5 +1,8 @@
 #include "square.h"
 
+#include "board.h"
+#include <QDebug>
+
 Square::Square(QWidget *parent) :
 	QPushButton(parent), m_occupied(false)
 {
@@ -12,7 +15,9 @@ Square::Square(QWidget *parent) :
 
 void Square::resetSquareColor(QColor color)
 {
-	m_occupied = color.isValid();
+	m_occupied = (color.isValid() && color != Board::SHADOW_COLOR);
+
+	//qDebug() << (m_occupied ? "" : "un") << "drawing" << (color == Board::SHADOW_COLOR ? "shadow" : "square");
 
 	QPalette p = this->palette();
 	p.setColor(QPalette::Button, color.isValid() ? color : m_defaultBackgroundColor);

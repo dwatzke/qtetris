@@ -30,19 +30,23 @@ public:
 	static const int ROWS;
 	static const int COLUMNS;
 	static const int START_INTERVAL;
+	static const QColor SHADOW_COLOR;
 
 	void startGame();
 
 private:
 	QGridLayout *m_layout;
 	QTimer *m_timer;
+
 	Brick *m_brick;
 	Brick *m_brickNext;
 	QList<Brick*> m_brickList;
 	QPoint m_brickPos;
-	int m_lines;
-
+	QPoint m_brickShadowPos;
 	QList<Brick*> m_brickBag;
+	bool m_skipShadow;
+
+	int m_lines;
 
 	void initializeBrickList();
 
@@ -56,7 +60,10 @@ private:
 	void removeFilledRows();
 	void moveRow(const int row, const int shift);
 
+	void drawBrickImpl(Brick *brick, const QPoint &brickPos, const bool draw, const bool shadow = false);
 	void drawBrick(bool draw = true);
+	void drawBrickShadow(bool draw = true);
+	void setBrickShadow(const bool enabled);
 
 	void gameOver(bool fail = true);
 
